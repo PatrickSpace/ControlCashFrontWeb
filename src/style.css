@@ -1,0 +1,134 @@
+body {
+  margin: 0;
+  background: #1f1f1f;
+}
+
+#app {
+  min-height: 100svh;
+}
+
+.v-theme--controlCashDark {
+  --cc-bg-start: #222934;
+  --cc-bg-end: #405575;
+  --cc-bg-radial: rgba(64, 85, 117, 0.9);
+  --cc-main-radial: rgba(73, 96, 132, 0.74);
+  --cc-panel: rgba(45, 57, 74, 0.78);
+  --cc-panel-border: rgba(13, 178, 189, 0.18);
+  --cc-panel-shadow: rgba(8, 13, 20, 0.34);
+  --cc-field: rgba(82, 101, 132, 0.48);
+  --cc-field-shadow: rgba(255, 255, 255, 0.04);
+  --cc-drawer: rgba(38, 50, 65, 0.9);
+  --cc-drawer-border: rgba(255, 255, 255, 0.04);
+  --cc-app-bar: rgba(52, 66, 87, 0.8);
+  --cc-list-item: rgba(72, 91, 121, 0.58);
+  --cc-active-item: rgba(13, 178, 189, 0.08);
+  --cc-muted-text: rgba(244, 247, 251, 0.78);
+}
+
+.v-theme--controlCashLight {
+  --cc-bg-start: #eaf3f6;
+  --cc-bg-end: #b9ccd8;
+  --cc-bg-radial: rgba(13, 178, 189, 0.18);
+  --cc-main-radial: rgba(13, 178, 189, 0.16);
+  --cc-panel: rgba(255, 255, 255, 0.82);
+  --cc-panel-border: rgba(13, 178, 189, 0.28);
+  --cc-panel-shadow: rgba(39, 65, 89, 0.18);
+  --cc-field: rgba(236, 246, 249, 0.92);
+  --cc-field-shadow: rgba(34, 41, 52, 0.05);
+  --cc-drawer: rgba(247, 252, 253, 0.92);
+  --cc-drawer-border: rgba(13, 178, 189, 0.18);
+  --cc-app-bar: rgba(255, 255, 255, 0.82);
+  --cc-list-item: rgba(239, 248, 250, 0.96);
+  --cc-active-item: rgba(13, 178, 189, 0.14);
+  --cc-muted-text: rgba(29, 38, 51, 0.78);
+}
+
+.controlcash-gradient {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 80% 0%, var(--cc-bg-radial), transparent 36%),
+    linear-gradient(135deg, var(--cc-bg-start) 0%, var(--cc-bg-end) 100%);
+}
+
+.controlcash-panel {
+  background: var(--cc-panel) !important;
+  border: 1px solid var(--cc-panel-border) !important;
+  box-shadow: 0 14px 28px var(--cc-panel-shadow) !important;
+}
+
+.controlcash-card-title {
+  border-bottom: 1px solid rgba(13, 178, 189, 0.42);
+}
+
+.controlcash-field :is(.v-field) {
+  background: var(--cc-field);
+  box-shadow: inset 0 1px 0 var(--cc-field-shadow);
+}
+
+.controlcash-primary-button {
+  background: linear-gradient(90deg, #049aa4 0%, #83d1d4 100%) !important;
+  box-shadow: 0 14px 22px rgba(10, 17, 27, 0.45) !important;
+  color: #ffffff !important;
+}
+
+.controlcash-drawer {
+  background: var(--cc-drawer) !important;
+  border-right: 1px solid var(--cc-drawer-border) !important;
+  box-shadow: 12px 0 28px rgba(8, 13, 20, 0.26);
+}
+
+.controlcash-drawer .v-list-item {
+  min-height: 64px;
+  color: var(--cc-muted-text);
+}
+
+.controlcash-drawer .v-list-item--active {
+  background: var(--cc-active-item);
+  color: #6bd9ff;
+}
+
+.controlcash-app-bar {
+  margin: 16px 24px 0;
+  width: calc(100% - 48px) !important;
+  border-radius: 6px;
+  background: var(--cc-app-bar) !important;
+  box-shadow: 0 10px 18px rgba(8, 13, 20, 0.3) !important;
+}
+
+.controlcash-search-wrap {
+  flex: 1 1 560px;
+  max-width: 680px;
+  min-width: 360px;
+}
+
+.controlcash-search-wrap .v-input {
+  width: 100%;
+}
+
+.controlcash-main {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 78% 4%, var(--cc-main-radial), transparent 34%),
+    linear-gradient(135deg, var(--cc-bg-start) 0%, var(--cc-bg-end) 100%);
+}
+
+.controlcash-list-item {
+  background: var(--cc-list-item);
+  box-shadow: 0 8px 14px rgba(8, 13, 20, 0.28);
+}
+
+.controlcash-login-actions {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10;
+}
+
+.v-theme--controlCashLight .controlcash-drawer .v-list-item--active {
+  color: #048f98;
+}
+
+.v-theme--controlCashLight .controlcash-app-bar,
+.v-theme--controlCashLight .controlcash-list-item {
+  box-shadow: 0 10px 20px rgba(39, 65, 89, 0.16) !important;
+}

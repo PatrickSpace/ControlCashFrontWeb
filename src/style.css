@@ -1,6 +1,12 @@
 body {
   margin: 0;
   background: #1f1f1f;
+  --cc-app-bar-margin-x: 24px;
+  --cc-app-bar-margin-top: 16px;
+  --cc-search-min: 220px;
+  --cc-search-ideal: 34vw;
+  --cc-search-max: 680px;
+  --cc-toolbar-gap: 16px;
 }
 
 #app {
@@ -52,7 +58,7 @@ body {
 
 .controlcash-panel {
   background: var(--cc-panel) !important;
-  border: 1px solid var(--cc-panel-border) !important;
+  /*border: 1px solid var(--cc-panel-border) !important;*/
   box-shadow: 0 14px 28px var(--cc-panel-shadow) !important;
 }
 
@@ -65,10 +71,9 @@ body {
   box-shadow: inset 0 1px 0 var(--cc-field-shadow);
 }
 
-.controlcash-primary-button {
-  background: linear-gradient(90deg, #049aa4 0%, #83d1d4 100%) !important;
-  box-shadow: 0 14px 22px rgba(10, 17, 27, 0.45) !important;
-  color: #ffffff !important;
+.controlcash-select-no-data {
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .controlcash-drawer {
@@ -88,17 +93,28 @@ body {
 }
 
 .controlcash-app-bar {
-  margin: 16px 24px 0;
-  width: calc(100% - 48px) !important;
+  margin: var(--cc-app-bar-margin-top) var(--cc-app-bar-margin-x) 0;
+  max-width: calc(100% - (var(--cc-app-bar-margin-x) * 2));
   border-radius: 6px;
   background: var(--cc-app-bar) !important;
   box-shadow: 0 10px 18px rgba(8, 13, 20, 0.3) !important;
 }
 
+.controlcash-app-bar .v-toolbar__content {
+  gap: var(--cc-toolbar-gap);
+  min-width: 0;
+}
+
+.controlcash-toolbar-title {
+  flex: 0 1 auto;
+  min-width: 112px;
+}
+
 .controlcash-search-wrap {
-  flex: 1 1 560px;
-  max-width: 680px;
-  min-width: 360px;
+  flex: 1 1 clamp(var(--cc-search-min), var(--cc-search-ideal), var(--cc-search-max));
+  margin-inline: auto;
+  max-width: var(--cc-search-max);
+  min-width: 0;
 }
 
 .controlcash-search-wrap .v-input {
@@ -131,4 +147,73 @@ body {
 .v-theme--controlCashLight .controlcash-app-bar,
 .v-theme--controlCashLight .controlcash-list-item {
   box-shadow: 0 10px 20px rgba(39, 65, 89, 0.16) !important;
+}
+
+.controlcash-table {
+  overflow-x: auto;
+}
+
+.controlcash-table :is(table) {
+  min-width: 720px;
+}
+
+.controlcash-title-block {
+  min-width: 0;
+}
+
+@media (min-width: 601px) and (max-width: 1100px) {
+  body {
+    --cc-app-bar-margin-x: 16px;
+    --cc-search-min: 160px;
+    --cc-search-ideal: 28vw;
+    --cc-search-max: 420px;
+    --cc-toolbar-gap: 10px;
+  }
+
+  .controlcash-toolbar-title {
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    --cc-app-bar-margin-x: 8px;
+    --cc-app-bar-margin-top: 8px;
+    --cc-toolbar-gap: 4px;
+  }
+
+  .controlcash-app-bar {
+    margin: var(--cc-app-bar-margin-top) var(--cc-app-bar-margin-x);
+    max-width: calc(100% - (var(--cc-app-bar-margin-x) * 2));
+  }
+
+  .controlcash-toolbar-title {
+    font-size: 1rem;
+    min-width: 0;
+  }
+
+  .controlcash-page-container {
+    padding-top: 88px !important;
+  }
+
+  .controlcash-card-title {
+    align-items: flex-start;
+  }
+
+  .controlcash-card-title .v-btn {
+    flex: 1 1 100%;
+    margin-top: 8px;
+  }
+
+  .controlcash-title-block {
+    flex: 1 1 calc(100% - 48px);
+  }
+
+  .controlcash-title-block .text-headline-small {
+    font-size: 1.25rem;
+  }
+
+  .controlcash-select-no-data {
+    max-width: 260px;
+  }
 }

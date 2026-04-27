@@ -7,7 +7,7 @@
     <v-row align="center" justify="center">
       <v-col cols="12" lg="4" md="6" sm="8">
         <v-card class="controlcash-panel" elevation="0">
-          <v-card-title class="controlcash-card-title text-h4 pt-8 px-8 pb-5">
+          <v-card-title class="controlcash-card-title text-headline-medium pt-8 px-8 pb-5">
             <div class="d-flex align-center ga-4">
               <v-icon color="primary" icon="mdi-cash-fast" size="36" />
               <span>ControlCash</span>
@@ -66,12 +66,12 @@
 
               <v-btn
                 block
-                class="controlcash-primary-button mt-4"
+                class="mt-4"
                 color="primary"
                 :disabled="!formValid"
                 :loading="authStore.loading"
-                size="large"
                 type="submit"
+                variant="flat"
               >
                 {{ submitLabel }}
               </v-btn>
@@ -86,7 +86,6 @@
               color="primary"
               prepend-icon="mdi-google"
               :loading="authStore.loading"
-              size="large"
               variant="tonal"
               @click="handleGoogleLogin"
             >

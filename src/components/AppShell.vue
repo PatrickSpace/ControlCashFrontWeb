@@ -5,12 +5,13 @@
         v-model="drawer"
         class="controlcash-drawer"
         color="surface"
+        :temporary="mobile"
         width="280"
       >
         <v-sheet class="pa-6" color="transparent">
           <div class="d-flex align-center ga-4">
             <v-icon color="primary" icon="mdi-cash-fast" size="36" />
-            <div class="text-h5">ControlCash</div>
+            <div class="text-headline-small">ControlCash</div>
             <v-spacer />
             <v-btn
               icon="mdi-chevron-double-left"
@@ -34,13 +35,13 @@
           <v-list-item
             v-for="item in navigationItems"
             :key="item.title"
-            :active="item.active"
             :disabled="item.disabled"
             :prepend-icon="item.icon"
             :title="item.title"
             :to="item.to"
             color="primary"
             rounded="0"
+            @click="handleNavigation"
           />
         </v-list>
 
@@ -62,11 +63,9 @@
 
       <v-app-bar class="controlcash-app-bar" color="surface" flat>
         <v-app-bar-nav-icon @click="drawer = !drawer" />
-        <v-toolbar-title>ControlCash</v-toolbar-title>
+        <v-toolbar-title class="controlcash-toolbar-title">ControlCash</v-toolbar-title>
 
-        <v-spacer />
-
-        <div class="controlcash-search-wrap mx-6 d-none d-md-flex">
+        <div class="controlcash-search-wrap d-none d-md-flex">
           <v-text-field
             class="controlcash-field"
             density="compact"
@@ -78,16 +77,6 @@
         </div>
 
         <ThemeToggle />
-
-        <v-avatar class="mr-2" color="surface-variant">
-          {{ userInitial }}
-        </v-avatar>
-
-        <v-btn
-          icon="mdi-chevron-down"
-          variant="text"
-          aria-label="Opciones de usuario"
-        />
       </v-app-bar>
     </template>
 
@@ -114,42 +103,71 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 
 import ThemeToggle from './ThemeToggle.vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationStore } from '../stores/notifications'
 
 const router = useRouter()
+const { mobile } = useDisplay()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
-const drawer = ref(true)
+const drawer = ref(!mobile.value)
 
 const navigationItems = [
   {
     title: 'Home',
     icon: 'mdi-home-outline',
     to: '/dashboard',
-    active: true,
+  },
+  {
+    title: 'Cuentas',
+    icon: 'mdi-wallet-outline',
+    to: '/accounts',
   },
   {
     title: 'Tarjetas',
     icon: 'mdi-credit-card-outline',
-    disabled: true,
+    to: '/cards',
   },
   {
-    title: 'Situación Financiera',
+    title: 'Categorías',
+    icon: 'mdi-shape-outline',
+    to: '/categories',
+  },
+  {
+    title: 'Transacciones',
+    icon: 'mdi-swap-horizontal',
+    to: '/transactions',
+  },
+  {
+    title: 'Presupuestos',
+    icon: 'mdi-chart-donut',
+    to: '/budgets',
+  },
+  {
+    title: 'Situación financiera',
     icon: 'mdi-file-chart-outline',
     disabled: true,
   },
 ]
 
-const userInitial = computed(() => authStore.displayName.charAt(0).toUpperCase())
-
 onMounted(() => {
   authStore.initAuth()
 })
+
+watch(mobile, (isMobile) => {
+  drawer.value = !isMobile
+})
+
+function handleNavigation() {
+  if (mobile.value) {
+    drawer.value = false
+  }
+}
 
 async function handleLogout() {
   await authStore.logout()

@@ -1,30 +1,30 @@
 <template>
-  <v-container class="pa-6 pa-md-8" fluid>
+  <v-container class="controlcash-page-container pa-4 pa-md-8" fluid>
     <v-row class="mb-2" dense>
       <v-col cols="12">
-        <div class="text-medium-emphasis text-h6">Disponible</div>
+        <div class="text-medium-emphasis text-title-large">Disponible</div>
       </v-col>
     </v-row>
 
     <v-row>
       <v-col cols="12" lg="4" md="5">
         <v-card class="controlcash-panel fill-height" elevation="0">
-          <v-card-text class="d-flex align-center justify-center pa-8">
+          <v-card-text class="d-flex align-center justify-center pa-4 pa-md-8">
             <v-progress-circular
               color="primary"
               :model-value="76"
               rotate="-90"
-              size="260"
-              width="22"
+              :size="mobile ? 220 : 260"
+              :width="mobile ? 18 : 22"
             >
               <div class="text-center">
                 <v-icon color="primary" icon="mdi-currency-usd" size="44" />
-                <div class="text-caption text-medium-emphasis mt-2">Puedes gastar:</div>
+                <div class="text-body-small text-medium-emphasis mt-2">Puedes gastar:</div>
                 <div class="d-flex align-end justify-center mt-1">
-                  <span class="text-h6 text-medium-emphasis mr-1">S/.</span>
-                  <span class="text-h3">1,325</span>
+                  <span class="text-title-large text-medium-emphasis mr-1">S/.</span>
+                  <span class="text-display-small">1,325</span>
                 </div>
-                <div class="d-flex align-center justify-center ga-2 mt-4 text-caption">
+                <div class="d-flex align-center justify-center ga-2 mt-4 text-body-small">
                   <v-icon color="primary" icon="mdi-credit-card-outline" />
                   <span>Usando tu tarjeta: <strong>Interbank</strong></span>
                 </div>
@@ -39,7 +39,7 @@
           <v-card-title class="controlcash-card-title px-6 py-4">
             Activos
           </v-card-title>
-          <v-card-text class="pa-6">
+          <v-card-text class="pa-4 pa-md-6">
             <v-list bg-color="transparent" class="pa-0">
               <v-list-item
                 v-for="asset in assets"
@@ -66,7 +66,7 @@
           <v-card-title class="controlcash-card-title px-6 py-4">
             Pasivos
           </v-card-title>
-          <v-card-text class="pa-6">
+          <v-card-text class="pa-4 pa-md-6">
             <v-list bg-color="transparent" class="pa-0">
               <v-list-item
                 v-for="liability in liabilities"
@@ -100,6 +100,10 @@
 </template>
 
 <script setup>
+import { useDisplay } from 'vuetify'
+
+const { mobile } = useDisplay()
+
 const assets = [
   { title: 'Saldo bancario BBVA', amount: 'S/. 1200.00' },
   { title: 'Saldo bancario Interbank', amount: 'S/. 200.00' },

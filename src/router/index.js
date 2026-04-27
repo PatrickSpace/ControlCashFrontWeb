@@ -1,6 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
+import AccountsView from '../views/crud/AccountsView.vue'
+import BudgetsView from '../views/crud/BudgetsView.vue'
+import CardsView from '../views/crud/CardsView.vue'
+import CategoriesView from '../views/crud/CategoriesView.vue'
+import TransactionsView from '../views/crud/TransactionsView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
@@ -22,6 +27,46 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/accounts',
+    name: 'accounts',
+    component: AccountsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/cards',
+    name: 'cards',
+    component: CardsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/categories',
+    name: 'categories',
+    component: CategoriesView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/transactions',
+    name: 'transactions',
+    component: TransactionsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/budgets',
+    name: 'budgets',
+    component: BudgetsView,
     meta: {
       requiresAuth: true,
     },

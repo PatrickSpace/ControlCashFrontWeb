@@ -10,11 +10,6 @@ const defaultTheme = ['controlCashDark', 'controlCashLight'].includes(savedTheme
 
 export const vuetify = createVuetify({
   defaults: {
-    VBtn: {
-      density: 'comfortable',
-      rounded: 'lg',
-      style: 'letter-spacing: 0.12em;',
-    },
     VCard: {
       rounded: 'lg',
     },

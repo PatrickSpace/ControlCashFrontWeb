@@ -3,7 +3,7 @@
     <v-row align="center" justify="center">
       <v-col cols="12" md="5" sm="8">
         <v-card class="text-center" elevation="2">
-          <v-card-title class="text-h4 pt-8">
+          <v-card-title class="text-headline-medium pt-8">
             Página no encontrada
           </v-card-title>
 

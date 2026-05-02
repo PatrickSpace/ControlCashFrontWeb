@@ -18,7 +18,7 @@
               :width="mobile ? 18 : 22"
             >
               <div class="text-center">
-                <v-icon color="primary" icon="mdi-currency-usd" size="44" />
+                <v-icon color="primary" icon="mdi-cash-multiple" size="44" />
                 <div class="text-body-small text-medium-emphasis mt-2">Puedes gastar:</div>
                 <div class="d-flex align-end justify-center mt-1">
                   <span class="text-title-large text-medium-emphasis mr-1">S/.</span>
@@ -37,16 +37,16 @@
       <v-col cols="12" lg="4" md="7">
         <v-card class="controlcash-panel fill-height" elevation="0">
           <v-card-title class="controlcash-card-title px-6 py-4">
-            Activos
+            Cuentas
           </v-card-title>
           <v-card-text class="pa-4 pa-md-6">
             <v-list bg-color="transparent" class="pa-0">
               <v-list-item
-                v-for="asset in assets"
-                :key="asset.title"
+                v-for="account in accountItems"
+                :key="account.id"
                 class="controlcash-list-item mb-4"
-                :subtitle="asset.amount"
-                :title="asset.title"
+                :subtitle="account.balanceLabel"
+                :title="account.name"
                 rounded="lg"
               >
                 <template #prepend>
@@ -57,6 +57,12 @@
                 </template>
               </v-list-item>
             </v-list>
+            <div
+              v-if="!accountItems.length"
+              class="pa-6 text-center text-medium-emphasis"
+            >
+              Todavía no hay cuentas registradas.
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -100,18 +106,58 @@
 </template>
 
 <script setup>
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useDisplay } from 'vuetify'
 
-const { mobile } = useDisplay()
+import { useAccountsStore } from '../stores/accounts'
+import { useTransactionsStore } from '../stores/transactions'
 
-const assets = [
-  { title: 'Saldo bancario BBVA', amount: 'S/. 1200.00' },
-  { title: 'Saldo bancario Interbank', amount: 'S/. 200.00' },
-]
+const { mobile } = useDisplay()
+const accountsStore = useAccountsStore()
+const transactionsStore = useTransactionsStore()
+
+const accountItems = computed(() =>
+  accountsStore.items.map((account) => ({
+    ...account,
+    balanceLabel: formatMoney(getAccountBalance(account)),
+  })),
+)
 
 const liabilities = [
   { title: 'Saldo bancario BBVA', amount: 'S/. 1200.00' },
   { title: 'Saldo bancario BBVA', amount: 'S/. 1200.00' },
   { title: 'Saldo bancario BBVA', amount: 'S/. 1200.00' },
 ]
+
+onMounted(() => {
+  accountsStore.subscribeRealtime()
+  transactionsStore.subscribeRealtime()
+})
+
+onBeforeUnmount(() => {
+  accountsStore.stopRealtime()
+  transactionsStore.stopRealtime()
+})
+
+function formatMoney(value) {
+  return `Saldo: S/. ${Number(value || 0).toFixed(2)}`
+}
+
+function getAccountBalance(account) {
+  return transactionsStore.items.reduce((balance, transaction) => {
+    if (transaction.accountId !== account.id) {
+      return balance
+    }
+
+    if (transaction.type === 'income') {
+      return balance + Number(transaction.amount || 0)
+    }
+
+    if (transaction.type === 'expense') {
+      return balance - Number(transaction.amount || 0)
+    }
+
+    return balance
+  }, 0)
+}
 </script>

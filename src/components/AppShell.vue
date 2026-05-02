@@ -26,7 +26,9 @@
           <template #append>
             <div class="pa-6">
               <v-btn block class="justify-start" :loading="authStore.loading" prepend-icon="mdi-power" variant="text"
-                @click="handleLogout">
+                @click="handleLogout">npm 
+
+
                 Cerrar sesión
               </v-btn>
             </div>

@@ -1,7 +1,6 @@
 import {
   ACCOUNT_TYPES,
   BUDGET_PERIODS,
-  CARD_CURRENCIES,
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
 } from './financeModel'
@@ -145,19 +144,6 @@ export function validateAccount(payload, options = {}) {
     account.type = normalizeEnum(payload.type, 'Tipo de cuenta', ACCOUNT_TYPES, { required: true })
   }
 
-  if (shouldValidate(payload, 'currency', partial)) {
-    account.currency = normalizeEnum(payload.currency || 'PEN', 'Moneda', CARD_CURRENCIES, {
-      required: true,
-    })
-  }
-
-  if (shouldValidate(payload, 'initialBalance', partial)) {
-    account.initialBalance = normalizeAmount(payload.initialBalance, 'Saldo inicial', {
-      required: true,
-      min: 0,
-    })
-  }
-
   if (shouldValidate(payload, 'cardId', partial)) {
     assignIfPresent(account, 'cardId', normalizeString(payload.cardId, 'Tarjeta'))
   }
@@ -207,12 +193,6 @@ export function validateCard(payload, options = {}) {
       required: true,
       min: 1,
       max: 31,
-    })
-  }
-
-  if (shouldValidate(payload, 'currency', partial)) {
-    card.currency = normalizeEnum(payload.currency || 'PEN', 'Moneda', CARD_CURRENCIES, {
-      required: true,
     })
   }
 

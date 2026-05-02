@@ -7,7 +7,6 @@ export const COLLECTIONS = Object.freeze({
 })
 
 export const ACCOUNT_TYPES = Object.freeze(['cash', 'bank', 'savings', 'credit', 'investments'])
-export const CARD_CURRENCIES = Object.freeze(['PEN', 'USD'])
 export const BUDGET_PERIODS = Object.freeze(['monthly'])
 export const TRANSACTION_TYPES = Object.freeze([
   'income',

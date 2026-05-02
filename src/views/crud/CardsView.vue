@@ -29,11 +29,6 @@ const headers = [
   { title: 'Estado', key: 'isActive' },
 ]
 
-const currencyItems = [
-  { title: 'Soles', value: 'PEN' },
-  { title: 'Dólares', value: 'USD' },
-]
-
 const fields = [
   { key: 'name', label: 'Nombre', rules: [formRules.required] },
   { key: 'bank', label: 'Banco', rules: [formRules.required] },
@@ -44,15 +39,6 @@ const fields = [
     prefix: 'S/.',
     defaultValue: 0,
     rules: [formRules.required, formRules.zeroOrPositive],
-    md: 6,
-  },
-  {
-    key: 'currency',
-    label: 'Moneda',
-    type: 'select',
-    defaultValue: 'PEN',
-    items: currencyItems,
-    rules: [formRules.required],
     md: 6,
   },
   {

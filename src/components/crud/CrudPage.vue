@@ -33,6 +33,10 @@
           {{ store.error }}
         </v-alert>
 
+        <div v-if="$slots.filters" class="mb-4">
+          <slot name="filters" />
+        </div>
+
         <v-data-table
           class="controlcash-table"
           density="comfortable"
@@ -81,8 +85,8 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog v-model="formDialog" :fullscreen="mobile" max-width="620" scrollable>
-      <v-card class="controlcash-panel" elevation="0">
+    <v-dialog v-model="formDialog" :fullscreen="mobile" max-width="620" :persistent="saving" scrollable>
+      <v-card class="controlcash-panel controlcash-dialog-panel" elevation="0">
         <v-card-title class="controlcash-card-title px-4 px-md-6 py-5">
           {{ editingItem ? 'Editar' : 'Nuevo' }} {{ singularTitle }}
         </v-card-title>
@@ -144,11 +148,11 @@
 
         <v-card-actions class="px-4 px-md-6 pb-4 pb-md-6">
           <v-spacer />
-          <v-btn variant="text" @click="formDialog = false">Cancelar</v-btn>
+          <v-btn :disabled="saving" variant="text" @click="formDialog = false">Cancelar</v-btn>
           <v-btn
             color="primary"
-            :disabled="!formValid"
-            :loading="store.loading"
+            :disabled="!formValid || saving"
+            :loading="saving"
             variant="tonal"
             @click="save"
           >
@@ -179,6 +183,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useDisplay } from 'vuetify'
+
+import { useNotificationStore } from '../../stores/notifications'
 
 const props = defineProps({
   title: {
@@ -217,6 +223,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  items: {
+    type: Array,
+    default: null,
+  },
   formatRow: {
     type: Function,
     default: (item) => item,
@@ -228,8 +238,10 @@ const deleteDialog = ref(false)
 const formValid = ref(false)
 const editingItem = ref(null)
 const deletingItem = ref(null)
+const saving = ref(false)
 const form = reactive({})
 const { mobile } = useDisplay()
+const notificationStore = useNotificationStore()
 
 const booleanItems = [
   { title: 'Activo', value: true },
@@ -246,7 +258,11 @@ const tableHeaders = computed(() => [
   },
 ])
 
-const rows = computed(() => props.store.items.map((item) => props.formatRow(item)))
+const rows = computed(() => {
+  const sourceItems = props.items ?? props.store.items
+
+  return sourceItems.map((item) => props.formatRow(item))
+})
 const deleteItemLabel = computed(() => deletingItem.value?.name || deletingItem.value?.description || 'este registro')
 
 function getRawItem(item) {
@@ -285,12 +301,14 @@ function resetForm(source = {}) {
 
 function openCreate() {
   editingItem.value = null
+  saving.value = false
   resetForm()
   formDialog.value = true
 }
 
 function openEdit(item) {
   editingItem.value = item
+  saving.value = false
   resetForm(item)
   formDialog.value = true
 }
@@ -301,22 +319,30 @@ function openDelete(item) {
 }
 
 async function save() {
-  if (!formValid.value) {
+  if (!formValid.value || saving.value) {
     return
   }
+
+  saving.value = true
 
   const payload = props.fields.reduce((nextPayload, field) => {
     nextPayload[field.key] = form[field.key]
     return nextPayload
   }, {})
 
-  if (editingItem.value) {
-    await props.store.updateItem(editingItem.value.id, payload)
-  } else {
-    await props.store.createItem(payload)
-  }
+  try {
+    if (editingItem.value) {
+      await props.store.updateItem(editingItem.value.id, payload)
+    } else {
+      await props.store.createItem(payload)
+    }
 
-  formDialog.value = false
+    formDialog.value = false
+  } catch {
+    notificationStore.error(props.store.error || 'No se pudo guardar el registro.')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function remove() {

@@ -19,6 +19,7 @@ body {
   --cc-bg-radial: rgba(64, 85, 117, 0.9);
   --cc-main-radial: rgba(73, 96, 132, 0.74);
   --cc-panel: rgba(45, 57, 74, 0.78);
+  --cc-dialog-panel: #2d394a;
   --cc-panel-border: rgba(13, 178, 189, 0.18);
   --cc-panel-shadow: rgba(8, 13, 20, 0.34);
   --cc-field: rgba(82, 101, 132, 0.48);
@@ -37,6 +38,7 @@ body {
   --cc-bg-radial: rgba(13, 178, 189, 0.18);
   --cc-main-radial: rgba(13, 178, 189, 0.16);
   --cc-panel: rgba(255, 255, 255, 0.82);
+  --cc-dialog-panel: #ffffff;
   --cc-panel-border: rgba(13, 178, 189, 0.28);
   --cc-panel-shadow: rgba(39, 65, 89, 0.18);
   --cc-field: rgba(236, 246, 249, 0.92);
@@ -62,6 +64,10 @@ body {
   box-shadow: 0 14px 28px var(--cc-panel-shadow) !important;
 }
 
+.controlcash-dialog-panel {
+  background: var(--cc-dialog-panel) !important;
+}
+
 .controlcash-card-title {
   border-bottom: 1px solid rgba(13, 178, 189, 0.42);
 }
@@ -79,7 +85,7 @@ body {
 .controlcash-drawer {
   background: var(--cc-drawer) !important;
   border-right: 1px solid var(--cc-drawer-border) !important;
-  box-shadow: 12px 0 28px rgba(8, 13, 20, 0.26);
+  
 }
 
 .controlcash-drawer .v-list-item {
@@ -93,10 +99,7 @@ body {
 }
 
 .controlcash-app-bar {
-  margin: var(--cc-app-bar-margin-top) var(--cc-app-bar-margin-x) 0;
-  max-width: calc(100% - (var(--cc-app-bar-margin-x) * 2));
-  border-radius: 6px;
-  background: var(--cc-app-bar) !important;
+  background: transparent !important;
   box-shadow: 0 10px 18px rgba(8, 13, 20, 0.3) !important;
 }
 

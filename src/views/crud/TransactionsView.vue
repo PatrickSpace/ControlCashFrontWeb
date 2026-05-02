@@ -1,20 +1,48 @@
 <template>
   <CrudPage
     empty-icon="mdi-swap-horizontal"
-    empty-text="Registra tu primer movimiento financiero."
+    :empty-text="emptyTransactionsText"
     :fields="fields"
     :format-row="formatRow"
     :headers="headers"
     icon="mdi-swap-horizontal"
+    :items="filteredTransactions"
     singular-title="transacción"
     :store="transactionsStore"
     subtitle="Fuente única para balances, crédito usado, presupuestos e insights."
     title="Transacciones"
-  />
+  >
+    <template #filters>
+      <v-row align="center" dense>
+        <v-col cols="12" md="5" lg="4">
+          <v-select
+            v-model="selectedAccountId"
+            class="controlcash-field"
+            clearable
+            density="comfortable"
+            hide-details
+            :items="accountFilterItems"
+            item-title="title"
+            item-value="value"
+            label="Filtrar por cuenta"
+            prepend-inner-icon="mdi-wallet-outline"
+          >
+            <template #no-data>
+              <v-list-item>
+                <v-list-item-title class="text-body-medium controlcash-select-no-data">
+                  No existen cuentas disponibles
+                </v-list-item-title>
+              </v-list-item>
+            </template>
+          </v-select>
+        </v-col>
+      </v-row>
+    </template>
+  </CrudPage>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import CrudPage from '../../components/crud/CrudPage.vue'
 import { useAccountsStore } from '../../stores/accounts'
@@ -27,6 +55,7 @@ const accountsStore = useAccountsStore()
 const cardsStore = useCardsStore()
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
+const selectedAccountId = ref(null)
 
 const headers = [
   { title: 'Fecha', key: 'date' },
@@ -39,6 +68,13 @@ const headers = [
 
 const accountItems = computed(() =>
   accountsStore.activeAccounts.map((account) => ({
+    title: account.name,
+    value: account.id,
+  })),
+)
+
+const accountFilterItems = computed(() =>
+  accountsStore.items.map((account) => ({
     title: account.name,
     value: account.id,
   })),
@@ -150,6 +186,24 @@ const transactionTypeLabels = {
   card_purchase: 'Compra tarjeta',
   card_payment: 'Pago tarjeta',
 }
+
+const emptyTransactionsText = computed(() =>
+  selectedAccountId.value
+    ? 'No hay transacciones para la cuenta seleccionada.'
+    : 'Registra tu primer movimiento financiero.',
+)
+
+const filteredTransactions = computed(() => {
+  if (!selectedAccountId.value) {
+    return transactionsStore.transactionsByDate
+  }
+
+  return transactionsStore.transactionsByDate.filter(
+    (transaction) =>
+      transaction.accountId === selectedAccountId.value ||
+      transaction.destinationAccountId === selectedAccountId.value,
+  )
+})
 
 onMounted(() => {
   accountsStore.subscribeRealtime()

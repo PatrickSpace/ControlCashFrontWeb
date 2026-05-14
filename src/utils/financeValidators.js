@@ -1,6 +1,7 @@
 import {
   ACCOUNT_TYPES,
   BUDGET_PERIODS,
+  CATEGORY_TYPES,
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
 } from './financeModel'
@@ -218,6 +219,12 @@ export function validateCategory(payload, options = {}) {
 
   if (shouldValidate(payload, 'name', partial)) {
     category.name = normalizeString(payload.name, 'Nombre', { required: true })
+  }
+
+  if (shouldValidate(payload, 'type', partial) || !partial) {
+    category.type = normalizeEnum(payload.type || 'expense', 'Tipo de categoria', CATEGORY_TYPES, {
+      required: true,
+    })
   }
 
   if (shouldValidate(payload, 'isActive', partial) || !partial) {

@@ -7,6 +7,11 @@ import CardsView from '../views/crud/CardsView.vue'
 import CategoriesView from '../views/crud/CategoriesView.vue'
 import TransactionsView from '../views/crud/TransactionsView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import AccountsInsightsView from '../views/insights/AccountsInsightsView.vue'
+import BudgetsInsightsView from '../views/insights/BudgetsInsightsView.vue'
+import CategoriesInsightsView from '../views/insights/CategoriesInsightsView.vue'
+import CreditCardsInsightsView from '../views/insights/CreditCardsInsightsView.vue'
+import TransactionsInsightsView from '../views/insights/TransactionsInsightsView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
@@ -67,6 +72,46 @@ const routes = [
     path: '/budgets',
     name: 'budgets',
     component: BudgetsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/insights/accounts',
+    name: 'accounts-insights',
+    component: AccountsInsightsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/insights/credit-cards',
+    name: 'credit-cards-insights',
+    component: CreditCardsInsightsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/insights/categories',
+    name: 'categories-insights',
+    component: CategoriesInsightsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/insights/transactions',
+    name: 'transactions-insights',
+    component: TransactionsInsightsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/insights/budgets',
+    name: 'budgets-insights',
+    component: BudgetsInsightsView,
     meta: {
       requiresAuth: true,
     },

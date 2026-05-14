@@ -6,9 +6,10 @@
     :format-row="formatRow"
     :headers="headers"
     icon="mdi-chart-donut"
+    :prepare-payload="prepareBudgetPayload"
     singular-title="presupuesto"
     :store="budgetsStore"
-    subtitle="El restante y porcentaje usado se calcularán desde transactions."
+    subtitle="Los presupuestos se comparan con los gastos del mes actual."
     title="Presupuestos"
   />
 </template>
@@ -23,15 +24,12 @@ import { formRules } from '../../utils/formRules'
 
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
-const currentDate = new Date()
 
 const headers = [
   { title: 'Nombre', key: 'name' },
   { title: 'Categoría', key: 'categoryLabel' },
   { title: 'Periodo', key: 'periodLabel' },
   { title: 'Límite', key: 'limitAmountLabel' },
-  { title: 'Mes', key: 'month' },
-  { title: 'Año', key: 'year' },
   { title: 'Estado', key: 'isActive' },
 ]
 
@@ -41,7 +39,7 @@ function getCategoryItems(editingBudget) {
     .map((budget) => budget.categoryId)
 
   return categoriesStore.activeCategories
-    .filter((category) => !usedCategoryIds.includes(category.id))
+    .filter((category) => isExpenseCategory(category) && !usedCategoryIds.includes(category.id))
     .map((category) => ({
       title: category.name,
       value: category.id,
@@ -80,22 +78,6 @@ const fields = computed(() => [
     md: 6,
   },
   {
-    key: 'month',
-    label: 'Mes',
-    type: 'number',
-    defaultValue: currentDate.getMonth() + 1,
-    rules: [formRules.required, formRules.month],
-    md: 3,
-  },
-  {
-    key: 'year',
-    label: 'Año',
-    type: 'number',
-    defaultValue: currentDate.getFullYear(),
-    rules: [formRules.required, formRules.year],
-    md: 3,
-  },
-  {
     key: 'isActive',
     label: 'Estado',
     type: 'boolean',
@@ -116,13 +98,34 @@ function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
 
+function getCurrentPeriod() {
+  const date = new Date()
+
+  return {
+    month: date.getMonth() + 1,
+    year: date.getFullYear(),
+  }
+}
+
+function prepareBudgetPayload(payload) {
+  return {
+    ...payload,
+    period: payload.period || 'monthly',
+    ...getCurrentPeriod(),
+  }
+}
+
 function formatRow(budget) {
   return {
     ...budget,
     categoryLabel: categoriesStore.items.find((category) => category.id === budget.categoryId)?.name || '-',
-    periodLabel: budget.period === 'monthly' ? 'Mensual' : budget.period,
+    periodLabel: budget.period === 'monthly' ? 'Mensual actual' : budget.period,
     limitAmountLabel: formatMoney(budget.limitAmount),
   }
+}
+
+function isExpenseCategory(category) {
+  return (category?.type || 'expense') === 'expense'
 }
 
 function isCategoryAvailable(categoryId, editingBudget) {

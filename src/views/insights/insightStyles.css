@@ -1,0 +1,145 @@
+.controlcash-insight-page {
+  max-width: 1600px;
+}
+
+.controlcash-metric {
+  min-height: 148px;
+}
+
+.controlcash-donut {
+  max-width: 280px;
+  width: min(100%, 280px);
+}
+
+.controlcash-donut-track,
+.controlcash-donut-value {
+  fill: none;
+  stroke-width: 22;
+  transform: rotate(-90deg);
+  transform-origin: 110px 110px;
+}
+
+.controlcash-donut-track {
+  stroke: rgba(148, 163, 184, 0.24);
+}
+
+.controlcash-donut-value {
+  stroke: rgb(var(--v-theme-primary));
+  stroke-linecap: round;
+  transition: stroke-dasharray 720ms var(--cc-ease-emphasized);
+}
+
+.controlcash-donut-percent,
+.controlcash-donut-caption {
+  fill: currentColor;
+  text-anchor: middle;
+}
+
+.controlcash-donut-percent {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.controlcash-donut-caption {
+  font-size: 13px;
+  opacity: 0.68;
+}
+
+.controlcash-bars {
+  display: grid;
+  gap: 18px;
+}
+
+.controlcash-bar-row {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(120px, 180px) 1fr minmax(88px, 120px);
+}
+
+.controlcash-bar-label,
+.controlcash-bar-amount {
+  display: grid;
+  gap: 2px;
+}
+
+.controlcash-bar-label span,
+.controlcash-bar-amount span {
+  color: rgba(var(--v-theme-on-surface), 0.64);
+  font-size: 0.78rem;
+}
+
+.controlcash-bar-amount {
+  text-align: right;
+}
+
+.controlcash-bar-track {
+  background: rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.controlcash-bar-value {
+  background: rgb(var(--v-theme-primary));
+  border-radius: inherit;
+  height: 100%;
+  min-width: 6px;
+  transition: width 720ms var(--cc-ease-emphasized);
+}
+
+.controlcash-bar-value.is-warning {
+  background: rgb(var(--v-theme-warning));
+}
+
+.controlcash-bar-value.is-danger {
+  background: rgb(var(--v-theme-error));
+}
+
+.controlcash-line-chart {
+  min-height: 240px;
+  width: 100%;
+}
+
+.controlcash-chart-grid {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.22);
+  stroke-width: 1;
+}
+
+.controlcash-line-area {
+  fill: rgba(var(--v-theme-primary), 0.14);
+  stroke: none;
+}
+
+.controlcash-line-value {
+  fill: none;
+  stroke: rgb(var(--v-theme-primary));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.controlcash-line-point {
+  fill: rgb(var(--v-theme-primary));
+  stroke: rgb(var(--v-theme-surface));
+  stroke-width: 3;
+}
+
+.controlcash-chart-label {
+  fill: rgba(var(--v-theme-on-surface), 0.7);
+  font-size: 13px;
+  text-anchor: middle;
+  text-transform: capitalize;
+}
+
+@media (max-width: 700px) {
+  .controlcash-bar-row {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .controlcash-bar-amount {
+    text-align: left;
+  }
+}

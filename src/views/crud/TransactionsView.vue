@@ -104,13 +104,6 @@ const cardItems = computed(() =>
   })),
 )
 
-const categoryItems = computed(() =>
-  categoriesStore.activeCategories.map((category) => ({
-    title: category.name,
-    value: category.id,
-  })),
-)
-
 const expenseTypeFilterItems = [
   { title: 'Efectivo', value: 'cash' },
   { title: 'Débito', value: 'debit' },
@@ -169,7 +162,8 @@ const fields = computed(() => [
     key: 'categoryId',
     label: 'Categoría',
     type: 'select',
-    items: categoryItems.value,
+    items: (form) => getCategoryItems(form.type),
+    noDataText: 'No existen categorías activas para este tipo de transacción.',
     showWhen: (form) => ['income', 'expense'].includes(form.type),
     md: 6,
   },
@@ -258,6 +252,33 @@ function findName(items, id, fallback = '-') {
   return items.find((item) => item.id === id)?.name || fallback
 }
 
+function getCategoryType(category) {
+  return category.type || 'expense'
+}
+
+function getCategoryItems(transactionType) {
+  if (!['income', 'expense'].includes(transactionType)) {
+    return []
+  }
+
+  return categoriesStore.activeCategories
+    .filter((category) => getCategoryType(category) === transactionType)
+    .map((category) => ({
+      title: category.name,
+      value: category.id,
+    }))
+}
+
+function getCompatibleCategoryId(transactionType, categoryId) {
+  if (!['income', 'expense'].includes(transactionType) || !categoryId) {
+    return null
+  }
+
+  const category = categoriesStore.items.find((item) => item.id === categoryId)
+
+  return category && getCategoryType(category) === transactionType ? categoryId : null
+}
+
 function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
@@ -276,7 +297,7 @@ function prepareTransactionPayload(payload) {
   const nextPayload = {
     ...payload,
     paymentMethod: payload.type === 'expense' ? payload.paymentMethod || 'debit' : null,
-    categoryId: ['income', 'expense'].includes(payload.type) ? payload.categoryId : null,
+    categoryId: getCompatibleCategoryId(payload.type, payload.categoryId),
     accountId: shouldUseAccount(payload) ? payload.accountId : null,
     destinationAccountId: payload.type === 'transfer' ? payload.destinationAccountId : null,
     cardId: shouldUseCard(payload) ? payload.cardId : null,

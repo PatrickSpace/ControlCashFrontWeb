@@ -23,19 +23,23 @@
       </v-card-title>
 
       <v-card-text class="pa-4 pa-md-6">
-        <v-alert
-          v-if="store.error"
-          class="mb-4"
-          color="error"
-          density="comfortable"
-          variant="tonal"
-        >
-          {{ store.error }}
-        </v-alert>
+        <v-slide-y-transition>
+          <v-alert
+            v-if="store.error"
+            class="mb-4 controlcash-alert-motion"
+            color="error"
+            density="comfortable"
+            variant="tonal"
+          >
+            {{ store.error }}
+          </v-alert>
+        </v-slide-y-transition>
 
-        <div v-if="$slots.filters" class="mb-4">
-          <slot name="filters" />
-        </div>
+        <v-expand-transition>
+          <div v-if="$slots.filters" class="mb-4 controlcash-filter-motion">
+            <slot name="filters" />
+          </div>
+        </v-expand-transition>
 
         <v-data-table
           class="controlcash-table"
@@ -85,7 +89,14 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog v-model="formDialog" :fullscreen="mobile" max-width="620" :persistent="saving" scrollable>
+    <v-dialog
+      v-model="formDialog"
+      :fullscreen="mobile"
+      max-width="620"
+      :persistent="saving"
+      scrollable
+      transition="dialog-bottom-transition"
+    >
       <v-card class="controlcash-panel controlcash-dialog-panel" elevation="0">
         <v-card-title class="controlcash-card-title px-4 px-md-6 py-5">
           {{ editingItem ? 'Editar' : 'Nuevo' }} {{ singularTitle }}
@@ -109,6 +120,7 @@
                     item-title="title"
                     item-value="value"
                     :label="getFieldLabel(field)"
+                    :return-object="false"
                     :rules="getFieldRules(field)"
                   >
                     <template #no-data>
@@ -128,6 +140,7 @@
                     item-title="title"
                     item-value="value"
                     :label="getFieldLabel(field)"
+                    :return-object="false"
                     :rules="getFieldRules(field)"
                   />
 
@@ -175,7 +188,12 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteDialog" :fullscreen="mobile" max-width="420">
+    <v-dialog
+      v-model="deleteDialog"
+      :fullscreen="mobile"
+      max-width="420"
+      transition="dialog-bottom-transition"
+    >
       <v-card class="controlcash-panel" elevation="0">
         <v-card-title class="text-title-large px-4 px-md-6 pt-6">Eliminar registro</v-card-title>
         <v-card-text class="px-4 px-md-6">
@@ -413,3 +431,42 @@ function formatDateValue(value) {
   return value
 }
 </script>
+
+<style scoped>
+.controlcash-alert-motion,
+.controlcash-filter-motion {
+  will-change: opacity, transform;
+}
+
+.controlcash-table :deep(tbody tr) {
+  animation: controlcash-row-in 340ms var(--cc-ease-standard, ease) both;
+}
+
+.controlcash-table :deep(tbody tr:nth-child(2)) {
+  animation-delay: 28ms;
+}
+
+.controlcash-table :deep(tbody tr:nth-child(3)) {
+  animation-delay: 56ms;
+}
+
+.controlcash-table :deep(tbody tr:nth-child(4)) {
+  animation-delay: 84ms;
+}
+
+.controlcash-table :deep(tbody tr:nth-child(5)) {
+  animation-delay: 112ms;
+}
+
+@keyframes controlcash-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

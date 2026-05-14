@@ -3,14 +3,34 @@ body {
   background: #1f1f1f;
   --cc-app-bar-margin-x: 24px;
   --cc-app-bar-margin-top: 16px;
+  --cc-duration-fast: 160ms;
+  --cc-duration-base: 260ms;
+  --cc-duration-slow: 420ms;
+  --cc-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cc-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --cc-search-min: 220px;
   --cc-search-ideal: 34vw;
   --cc-search-max: 680px;
   --cc-toolbar-gap: 16px;
 }
 
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 #app {
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#app > .v-application,
+#app .v-application__wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .v-theme--controlCashDark {
@@ -26,7 +46,7 @@ body {
   --cc-field-shadow: rgba(255, 255, 255, 0.04);
   --cc-drawer: rgba(38, 50, 65, 0.9);
   --cc-drawer-border: rgba(255, 255, 255, 0.04);
-  --cc-app-bar: rgba(52, 66, 87, 0.8);
+  --cc-app-bar: var(--cc-drawer);
   --cc-list-item: rgba(72, 91, 121, 0.58);
   --cc-active-item: rgba(13, 178, 189, 0.08);
   --cc-muted-text: rgba(244, 247, 251, 0.78);
@@ -45,23 +65,38 @@ body {
   --cc-field-shadow: rgba(34, 41, 52, 0.05);
   --cc-drawer: rgba(247, 252, 253, 0.92);
   --cc-drawer-border: rgba(13, 178, 189, 0.18);
-  --cc-app-bar: rgba(255, 255, 255, 0.82);
+  --cc-app-bar: #ffffff;
   --cc-list-item: rgba(239, 248, 250, 0.96);
   --cc-active-item: rgba(13, 178, 189, 0.14);
   --cc-muted-text: rgba(29, 38, 51, 0.78);
 }
 
 .controlcash-gradient {
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
   background:
     radial-gradient(circle at 80% 0%, var(--cc-bg-radial), transparent 36%),
     linear-gradient(135deg, var(--cc-bg-start) 0%, var(--cc-bg-end) 100%);
+  transition: background var(--cc-duration-slow) var(--cc-ease-standard);
 }
 
 .controlcash-panel {
+  animation: controlcash-surface-in var(--cc-duration-slow) var(--cc-ease-emphasized) both;
   background: var(--cc-panel) !important;
   /*border: 1px solid var(--cc-panel-border) !important;*/
   box-shadow: 0 14px 28px var(--cc-panel-shadow) !important;
+  transform-origin: center top;
+  transition:
+    background var(--cc-duration-base) var(--cc-ease-standard),
+    box-shadow var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-base) var(--cc-ease-standard);
+  will-change: transform;
+}
+
+.controlcash-panel:hover {
+  box-shadow: 0 18px 34px var(--cc-panel-shadow) !important;
+  transform: translateY(-2px);
 }
 
 .controlcash-dialog-panel {
@@ -70,11 +105,26 @@ body {
 
 .controlcash-card-title {
   border-bottom: 1px solid rgba(13, 178, 189, 0.42);
+  transition: border-color var(--cc-duration-base) var(--cc-ease-standard);
 }
 
 .controlcash-field :is(.v-field) {
   background: var(--cc-field);
   box-shadow: inset 0 1px 0 var(--cc-field-shadow);
+  transition:
+    background var(--cc-duration-base) var(--cc-ease-standard),
+    box-shadow var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-fast) var(--cc-ease-standard);
+}
+
+.controlcash-field :is(.v-field:hover) {
+  transform: translateY(-1px);
+}
+
+.controlcash-field :is(.v-field--focused) {
+  box-shadow:
+    inset 0 1px 0 var(--cc-field-shadow),
+    0 0 0 3px rgba(13, 178, 189, 0.16);
 }
 
 .controlcash-select-no-data {
@@ -85,12 +135,30 @@ body {
 .controlcash-drawer {
   background: var(--cc-drawer) !important;
   border-right: 1px solid var(--cc-drawer-border) !important;
-  
+  height: 100svh !important;
+  max-height: 100svh !important;
+  transition:
+    background var(--cc-duration-slow) var(--cc-ease-standard),
+    border-color var(--cc-duration-slow) var(--cc-ease-standard);
+}
+
+.controlcash-drawer :is(.v-navigation-drawer__content) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .controlcash-drawer .v-list-item {
   min-height: 64px;
   color: var(--cc-muted-text);
+  transition:
+    background var(--cc-duration-base) var(--cc-ease-standard),
+    color var(--cc-duration-base) var(--cc-ease-standard),
+    padding-inline var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-base) var(--cc-ease-standard);
+}
+
+.controlcash-drawer .v-list-item:hover {
+  transform: translateX(4px);
 }
 
 .controlcash-drawer .v-list-item--active {
@@ -99,8 +167,13 @@ body {
 }
 
 .controlcash-app-bar {
-  background: transparent !important;
+  animation: controlcash-topbar-in 480ms var(--cc-ease-emphasized) both;
+  background: var(--cc-app-bar) !important;
   box-shadow: 0 10px 18px rgba(8, 13, 20, 0.3) !important;
+  transition:
+    background var(--cc-duration-slow) var(--cc-ease-standard),
+    box-shadow var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-base) var(--cc-ease-standard);
 }
 
 .controlcash-app-bar .v-toolbar__content {
@@ -125,15 +198,31 @@ body {
 }
 
 .controlcash-main {
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   background:
     radial-gradient(circle at 78% 4%, var(--cc-main-radial), transparent 34%),
     linear-gradient(135deg, var(--cc-bg-start) 0%, var(--cc-bg-end) 100%);
+  transition: background var(--cc-duration-slow) var(--cc-ease-standard);
 }
 
 .controlcash-list-item {
+  animation: controlcash-list-item-in var(--cc-duration-slow) var(--cc-ease-emphasized) both;
   background: var(--cc-list-item);
   box-shadow: 0 8px 14px rgba(8, 13, 20, 0.28);
+  transition:
+    background var(--cc-duration-base) var(--cc-ease-standard),
+    box-shadow var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-base) var(--cc-ease-standard);
+}
+
+.controlcash-list-item:hover {
+  box-shadow: 0 12px 22px rgba(8, 13, 20, 0.32);
+  transform: translateX(3px);
 }
 
 .controlcash-login-actions {
@@ -160,8 +249,158 @@ body {
   min-width: 720px;
 }
 
+.controlcash-table :is(tbody tr) {
+  transition:
+    background-color var(--cc-duration-fast) var(--cc-ease-standard),
+    transform var(--cc-duration-fast) var(--cc-ease-standard);
+}
+
+.controlcash-table :is(tbody tr:hover) {
+  transform: translateX(3px);
+}
+
 .controlcash-title-block {
   min-width: 0;
+}
+
+.controlcash-page-enter-active,
+.controlcash-page-leave-active {
+  transition:
+    opacity var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-base) var(--cc-ease-standard),
+    filter var(--cc-duration-base) var(--cc-ease-standard);
+}
+
+.controlcash-page-enter-from {
+  filter: blur(6px);
+  opacity: 0;
+  transform: translateY(14px) scale(0.992);
+}
+
+.controlcash-page-leave-to {
+  filter: blur(2px);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.996);
+}
+
+.v-btn {
+  transition:
+    background-color var(--cc-duration-fast) var(--cc-ease-standard),
+    box-shadow var(--cc-duration-fast) var(--cc-ease-standard),
+    color var(--cc-duration-fast) var(--cc-ease-standard),
+    transform var(--cc-duration-fast) var(--cc-ease-standard) !important;
+}
+
+.v-btn:hover {
+  transform: translateY(-1px);
+}
+
+.v-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.v-chip,
+.v-avatar,
+.v-icon {
+  transition:
+    background-color var(--cc-duration-base) var(--cc-ease-standard),
+    color var(--cc-duration-base) var(--cc-ease-standard),
+    transform var(--cc-duration-fast) var(--cc-ease-standard);
+}
+
+.v-chip:hover {
+  transform: translateY(-1px);
+}
+
+.v-alert {
+  animation: controlcash-alert-in var(--cc-duration-slow) var(--cc-ease-emphasized) both;
+}
+
+.v-dialog > .v-overlay__content > .v-card,
+.v-snackbar .v-snackbar__wrapper,
+.v-menu > .v-overlay__content,
+.v-select__content {
+  animation: controlcash-overlay-in var(--cc-duration-base) var(--cc-ease-emphasized) both;
+  transform-origin: center top;
+}
+
+.v-progress-linear__determinate {
+  transition: width 720ms var(--cc-ease-emphasized) !important;
+}
+
+.v-progress-circular circle {
+  transition: stroke-dashoffset 720ms var(--cc-ease-emphasized);
+}
+
+@keyframes controlcash-surface-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes controlcash-list-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes controlcash-topbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes controlcash-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes controlcash-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 @media (min-width: 601px) and (max-width: 1100px) {

@@ -80,7 +80,7 @@
 
           <v-card-actions class="px-5 pb-5">
             <v-btn block color="primary" append-icon="mdi-arrow-right" variant="tonal" @click="openAction(action)">
-              Iniciar
+              {{ action.kind === 'import' ? 'Importar' : 'Iniciar' }}
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -224,6 +224,126 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="importDialog" max-width="620" :persistent="importingTransactions">
+      <v-card class="controlcash-panel controlcash-dialog-panel" elevation="0">
+        <v-card-title class="controlcash-card-title px-4 px-md-6 py-5">
+          Importar transacciones
+        </v-card-title>
+
+        <v-card-text class="pa-4 pa-md-6">
+          <v-form v-model="importFormValid" @submit.prevent="handleImportSubmit">
+            <v-row>
+              <v-col cols="12">
+                <v-select
+                  v-model="importMode"
+                  class="controlcash-field"
+                  density="comfortable"
+                  :items="importModeItems"
+                  item-title="title"
+                  item-value="value"
+                  label="Tipo de importación"
+                  prepend-inner-icon="mdi-file-cog-outline"
+                  :rules="[formRules.required]"
+                />
+              </v-col>
+
+              <v-col v-if="shouldShowImportAccount" cols="12" md="6">
+                <v-select
+                  v-model="importAccountId"
+                  class="controlcash-field"
+                  clearable
+                  density="comfortable"
+                  :items="accountItems"
+                  item-title="title"
+                  item-value="value"
+                  :label="importMode === 'card_payment' ? 'Cuenta de cargo' : 'Cuenta para importar'"
+                  prepend-inner-icon="mdi-wallet-plus-outline"
+                  :rules="[formRules.required]"
+                >
+                  <template #no-data>
+                    <v-list-item>
+                      <v-list-item-title class="text-body-medium controlcash-select-no-data">
+                        No existen cuentas activas disponibles
+                      </v-list-item-title>
+                    </v-list-item>
+                  </template>
+                </v-select>
+              </v-col>
+
+              <v-col v-if="importMode === 'transactions'" cols="12" md="6">
+                <v-select
+                  v-model="importPaymentMethod"
+                  class="controlcash-field"
+                  density="comfortable"
+                  :items="paymentMethodItems"
+                  item-title="title"
+                  item-value="value"
+                  label="Método para importar"
+                  prepend-inner-icon="mdi-credit-card-check-outline"
+                  :rules="[formRules.required]"
+                />
+              </v-col>
+
+              <v-col v-if="shouldShowImportCard" :cols="12" :md="importMode === 'card_payment' ? 6 : 12">
+                <v-select
+                  v-model="importCardId"
+                  class="controlcash-field"
+                  clearable
+                  density="comfortable"
+                  :items="cardItems"
+                  item-title="title"
+                  item-value="value"
+                  label="Tarjeta para importar"
+                  prepend-inner-icon="mdi-credit-card-outline"
+                  :rules="[formRules.required]"
+                >
+                  <template #no-data>
+                    <v-list-item>
+                      <v-list-item-title class="text-body-medium controlcash-select-no-data">
+                        No existen tarjetas activas disponibles
+                      </v-list-item-title>
+                    </v-list-item>
+                  </template>
+                </v-select>
+              </v-col>
+
+              <v-col cols="12">
+                <v-file-input
+                  v-model="importFile"
+                  accept="application/json,.json"
+                  class="controlcash-field"
+                  clearable
+                  density="comfortable"
+                  label="Archivo JSON"
+                  :loading="importingTransactions"
+                  prepend-icon=""
+                  prepend-inner-icon="mdi-file-upload-outline"
+                  :rules="[formRules.required]"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="px-4 px-md-6 pb-4 pb-md-6">
+          <v-spacer />
+          <v-btn :disabled="importingTransactions" variant="text" @click="closeImportDialog">
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!canImportTransactions || importingTransactions"
+            :loading="importingTransactions"
+            variant="tonal"
+            @click="handleImportSubmit"
+          >
+            Importar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -250,6 +370,14 @@ const actionDialog = ref(false)
 const selectedAction = ref(null)
 const formValid = ref(false)
 const saving = ref(false)
+const importDialog = ref(false)
+const importFormValid = ref(false)
+const importMode = ref('transactions')
+const importFile = ref(null)
+const importAccountId = ref(null)
+const importPaymentMethod = ref('debit')
+const importCardId = ref(null)
+const importingTransactions = ref(false)
 const form = reactive({
   amount: '',
   date: new Date(),
@@ -267,6 +395,7 @@ const actionGroups = [
   { title: 'Gastos', value: 'expense' },
   { title: 'Tarjetas', value: 'cards' },
   { title: 'Cuentas', value: 'accounts' },
+  { title: 'Importaciones', value: 'imports' },
 ]
 
 const actions = [
@@ -326,6 +455,17 @@ const actions = [
     color: 'primary',
     transactionType: 'transfer',
     tags: ['transferencia', 'mover dinero', 'cuentas'],
+  },
+  {
+    id: 'import-transactions',
+    title: 'Importar transacciones',
+    description: 'Carga ingresos, gastos o pagos de tarjeta desde un archivo JSON.',
+    group: 'imports',
+    groupLabel: 'Importación',
+    icon: 'mdi-file-upload-outline',
+    color: 'primary',
+    kind: 'import',
+    tags: ['json', 'masivo', 'importar'],
   },
   {
     id: 'cash-withdrawal',
@@ -411,6 +551,11 @@ const paymentMethodItems = [
   { title: 'Crédito', value: 'credit' },
 ]
 
+const importModeItems = [
+  { title: 'Gastos e ingresos', value: 'transactions' },
+  { title: 'Pago de tarjeta', value: 'card_payment' },
+]
+
 const selectedActionType = computed(() => selectedAction.value?.transactionType || 'expense')
 const usesCategory = computed(() => ['income', 'expense'].includes(selectedActionType.value))
 const usesAccount = computed(() =>
@@ -436,6 +581,22 @@ const accountLabel = computed(() => {
 
   return 'Cuenta'
 })
+const canImportTransactions = computed(
+  () =>
+    Boolean(importFile.value) &&
+    Boolean(importMode.value) &&
+    (!shouldShowImportAccount.value || Boolean(importAccountId.value)) &&
+    (importMode.value === 'card_payment'
+      ? Boolean(importCardId.value)
+      : Boolean(importPaymentMethod.value) &&
+        (importPaymentMethod.value !== 'credit' || Boolean(importCardId.value))),
+)
+const shouldShowImportCard = computed(
+  () => importMode.value === 'card_payment' || importPaymentMethod.value === 'credit',
+)
+const shouldShowImportAccount = computed(
+  () => importMode.value === 'card_payment' || importPaymentMethod.value !== 'credit',
+)
 
 onMounted(() => {
   accountsStore.subscribeRealtime()
@@ -450,6 +611,11 @@ onBeforeUnmount(() => {
 })
 
 function openAction(action) {
+  if (action.kind === 'import') {
+    openImportDialog()
+    return
+  }
+
   selectedAction.value = action
   resetForm(action)
   actionDialog.value = true
@@ -494,6 +660,158 @@ async function saveAction() {
   }
 }
 
+function openImportDialog() {
+  resetImportForm()
+  importDialog.value = true
+}
+
+function closeImportDialog() {
+  importDialog.value = false
+  resetImportForm()
+}
+
+function resetImportForm() {
+  importMode.value = 'transactions'
+  importFile.value = null
+  importAccountId.value = null
+  importPaymentMethod.value = 'debit'
+  importCardId.value = null
+  importFormValid.value = false
+}
+
+async function handleImportSubmit() {
+  const file = Array.isArray(importFile.value) ? importFile.value[0] : importFile.value
+
+  if (!file || importingTransactions.value) {
+    return
+  }
+
+  if (!canImportTransactions.value) {
+    notificationStore.error('Completa el formulario de importación antes de cargar el archivo.')
+    return
+  }
+
+  importingTransactions.value = true
+
+  try {
+    const transactions = parseTransactionsJson(await file.text())
+    const result = await importTransactions(transactions)
+
+    if (result.failed === 0) {
+      notificationStore.success(`Se importaron ${result.imported} transacciones.`)
+    } else if (result.imported > 0) {
+      notificationStore.show(
+        `Se importaron ${result.imported} transacciones. ${result.failed} no se pudieron importar: ${result.errors.join(' ')}`,
+        'warning',
+      )
+    } else {
+      notificationStore.error(`No se importaron transacciones: ${result.errors.join(' ')}`)
+    }
+
+    importDialog.value = false
+  } catch (error) {
+    notificationStore.error(error?.message || 'No se pudo importar el archivo.')
+  } finally {
+    if (!importDialog.value) {
+      resetImportForm()
+    }
+    importingTransactions.value = false
+  }
+}
+
+function parseTransactionsJson(content) {
+  let parsedContent
+
+  try {
+    parsedContent = JSON.parse(content)
+  } catch {
+    throw new Error('El archivo no contiene un JSON válido.')
+  }
+
+  const transactions = Array.isArray(parsedContent) ? parsedContent : parsedContent?.transactions
+
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    throw new Error('El JSON debe ser un arreglo de transacciones o tener la propiedad transactions.')
+  }
+
+  return transactions
+}
+
+async function importTransactions(transactions) {
+  const result = {
+    imported: 0,
+    failed: 0,
+    errors: [],
+  }
+
+  for (const [index, transaction] of transactions.entries()) {
+    try {
+      await transactionsStore.createItem(prepareImportedTransaction(transaction))
+      result.imported += 1
+    } catch (error) {
+      result.failed += 1
+      result.errors.push(`Fila ${index + 1}: ${error?.message || 'registro inválido'}.`)
+    }
+  }
+
+  return result
+}
+
+function prepareImportedTransaction(transaction) {
+  if (!transaction || typeof transaction !== 'object' || Array.isArray(transaction)) {
+    throw new Error('La transacción debe ser un objeto.')
+  }
+
+  if (importMode.value === 'card_payment') {
+    return prepareImportedCardPayment(transaction)
+  }
+
+  if (!['income', 'expense'].includes(transaction.type)) {
+    throw new Error('Solo se pueden importar ingresos o gastos.')
+  }
+
+  const categoryId = transaction.categoryId || findCategoryId(transaction)
+
+  if (!categoryId) {
+    throw new Error('La categoría es obligatoria o no existe para este tipo de transacción.')
+  }
+
+  return buildTransactionPayload(
+    { transactionType: transaction.type, title: transaction.description || 'Transacción importada' },
+    {
+      ...transaction,
+      paymentMethod: transaction.type === 'expense' ? importPaymentMethod.value : null,
+      accountId: shouldUseImportedAccount(transaction) ? importAccountId.value : null,
+      destinationAccountId: null,
+      cardId: importPaymentMethod.value === 'credit' && transaction.type === 'expense' ? importCardId.value : null,
+      categoryId,
+    },
+  )
+}
+
+function shouldUseImportedAccount(transaction) {
+  return (
+    importMode.value === 'card_payment' ||
+    transaction.type === 'income' ||
+    (transaction.type === 'expense' && importPaymentMethod.value !== 'credit')
+  )
+}
+
+function prepareImportedCardPayment(transaction) {
+  return buildTransactionPayload(
+    { transactionType: 'card_payment', title: transaction.description || 'Pago de tarjeta importado' },
+    {
+      ...transaction,
+      type: 'card_payment',
+      paymentMethod: null,
+      categoryId: null,
+      accountId: importAccountId.value,
+      destinationAccountId: null,
+      cardId: importCardId.value,
+    },
+  )
+}
+
 function buildTransactionPayload(action, source) {
   const type = action.transactionType
 
@@ -521,6 +839,30 @@ function shouldUseAccount(type, paymentMethod) {
 
 function shouldUseCard(type, paymentMethod) {
   return type === 'card_payment' || (type === 'expense' && paymentMethod === 'credit')
+}
+
+function findCategoryId(transaction) {
+  const categoryName = transaction.categoryName || transaction.category
+
+  if (!categoryName) {
+    return undefined
+  }
+
+  const normalizedName = normalizeLookupText(categoryName)
+
+  return categoriesStore.items.find(
+    (category) =>
+      normalizeLookupText(category.name) === normalizedName &&
+      getCategoryType(category) === transaction.type,
+  )?.id
+}
+
+function getCategoryType(category) {
+  return category.type || 'expense'
+}
+
+function normalizeLookupText(value) {
+  return String(value || '').trim().toLowerCase()
 }
 
 function formatDateValue(value) {

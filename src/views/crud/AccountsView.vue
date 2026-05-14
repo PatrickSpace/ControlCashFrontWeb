@@ -105,16 +105,28 @@ function formatMoney(value) {
 
 function getAccountBalance(account) {
   return transactionsStore.items.reduce((balance, transaction) => {
-    if (transaction.accountId !== account.id) {
-      return balance
-    }
+    const amount = Number(transaction.amount || 0)
 
     if (transaction.type === 'income') {
-      return balance + Number(transaction.amount || 0)
+      return transaction.accountId === account.id ? balance + amount : balance
     }
 
     if (transaction.type === 'expense') {
-      return balance - Number(transaction.amount || 0)
+      return transaction.accountId === account.id ? balance - amount : balance
+    }
+
+    if (transaction.type === 'card_payment') {
+      return transaction.accountId === account.id ? balance - amount : balance
+    }
+
+    if (transaction.type === 'transfer') {
+      if (transaction.accountId === account.id) {
+        return balance - amount
+      }
+
+      if (transaction.destinationAccountId === account.id) {
+        return balance + amount
+      }
     }
 
     return balance

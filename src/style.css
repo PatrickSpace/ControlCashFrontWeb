@@ -424,22 +424,49 @@ body {
     --cc-toolbar-gap: 4px;
   }
 
+  .controlcash-drawer {
+    max-width: min(86vw, 320px) !important;
+    width: min(86vw, 320px) !important;
+  }
+
+  .controlcash-drawer .v-sheet {
+    padding: 18px !important;
+  }
+
+  .controlcash-drawer .v-list-item {
+    min-height: 52px;
+  }
+
   .controlcash-app-bar {
     margin: var(--cc-app-bar-margin-top) var(--cc-app-bar-margin-x);
     max-width: calc(100% - (var(--cc-app-bar-margin-x) * 2));
+    padding-inline-end: 8px !important;
+  }
+
+  .controlcash-app-bar .v-toolbar__content {
+    min-height: 56px !important;
+    padding-inline: 4px 8px;
+  }
+
+  .controlcash-nav-button {
+    flex: 0 0 44px;
   }
 
   .controlcash-toolbar-title {
     font-size: 1rem;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .controlcash-page-container {
-    padding-top: 88px !important;
+    padding: 76px 12px 18px !important;
   }
 
   .controlcash-card-title {
     align-items: flex-start;
+    padding: 16px !important;
   }
 
   .controlcash-card-title .v-btn {
@@ -447,15 +474,84 @@ body {
     margin-top: 8px;
   }
 
+  .controlcash-panel {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 20px var(--cc-panel-shadow) !important;
+  }
+
+  .controlcash-panel:hover,
+  .controlcash-list-item:hover,
+  .controlcash-table :is(tbody tr:hover),
+  .v-btn:hover,
+  .v-chip:hover,
+  .controlcash-field :is(.v-field:hover) {
+    transform: none;
+  }
+
+  .controlcash-list-item {
+    box-shadow: 0 8px 14px rgba(8, 13, 20, 0.2);
+  }
+
   .controlcash-title-block {
     flex: 1 1 calc(100% - 48px);
+    min-width: 0;
   }
 
   .controlcash-title-block .text-headline-small {
     font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .controlcash-title-block .text-body-medium {
+    font-size: 0.86rem;
+    line-height: 1.35;
+    max-width: 100%;
+  }
+
+  .controlcash-dialog-panel {
+    border-radius: 0 !important;
+    min-height: 100%;
+  }
+
+  .v-dialog .v-card-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .v-dialog .v-card-actions .v-btn {
+    flex: 1 1 auto;
+    margin-inline-start: 0 !important;
+    width: 100%;
+  }
+
+  .v-snackbar .v-snackbar__wrapper {
+    margin: 8px;
+    max-width: calc(100vw - 16px);
+    min-width: 0;
+  }
+
+  .v-data-table-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .v-overlay__content {
+    max-width: calc(100vw - 16px) !important;
   }
 
   .controlcash-select-no-data {
     max-width: 260px;
+  }
+}
+
+@media (max-width: 380px) {
+  .controlcash-toolbar-title {
+    display: none;
+  }
+
+  .controlcash-page-container {
+    padding-inline: 10px !important;
   }
 }

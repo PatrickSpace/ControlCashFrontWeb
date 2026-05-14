@@ -41,7 +41,76 @@
           </div>
         </v-expand-transition>
 
+        <v-skeleton-loader
+          v-if="mobile && store.loading && !rows.length"
+          class="controlcash-mobile-list"
+          type="list-item-two-line@4"
+        />
+
+        <v-list
+          v-else-if="mobile"
+          bg-color="transparent"
+          class="controlcash-mobile-list pa-0"
+        >
+          <template v-if="rows.length">
+            <v-list-item
+              v-for="item in rows"
+              :key="getRawItem(item).id"
+              class="controlcash-list-item controlcash-mobile-record mb-3"
+              rounded="lg"
+            >
+              <template #prepend>
+                <v-avatar color="primary" rounded="lg" size="38" variant="tonal">
+                  <v-icon :icon="icon" />
+                </v-avatar>
+              </template>
+
+              <v-list-item-title>{{ getMobileTitle(item) }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ getMobileSubtitle(item) }}
+              </v-list-item-subtitle>
+
+              <template #append>
+                <div class="d-flex ga-1">
+                  <v-btn
+                    density="compact"
+                    icon="mdi-pencil-outline"
+                    variant="text"
+                    aria-label="Editar"
+                    @click="openEdit(getRawItem(item))"
+                  />
+                  <v-btn
+                    color="error"
+                    density="compact"
+                    icon="mdi-delete-outline"
+                    variant="text"
+                    aria-label="Eliminar"
+                    @click="openDelete(getRawItem(item))"
+                  />
+                </div>
+              </template>
+
+              <div class="controlcash-mobile-record-grid mt-3">
+                <div
+                  v-for="field in getMobileDetailFields(item)"
+                  :key="field.key"
+                  class="controlcash-mobile-record-field"
+                >
+                  <span>{{ field.title }}</span>
+                  <strong>{{ field.value }}</strong>
+                </div>
+              </div>
+            </v-list-item>
+          </template>
+
+          <div v-else class="pa-8 text-center text-medium-emphasis">
+            <v-icon class="mb-2" :icon="emptyIcon" size="40" />
+            <div>{{ emptyText }}</div>
+          </div>
+        </v-list>
+
         <v-data-table
+          v-else
           class="controlcash-table"
           density="comfortable"
           :headers="tableHeaders"
@@ -304,6 +373,47 @@ function getRawItem(item) {
   return item?.raw || item
 }
 
+function getHeaderFields() {
+  return props.headers.filter((header) => header.key !== 'actions')
+}
+
+function formatMobileValue(item, key) {
+  const rawItem = getRawItem(item)
+  const value = rawItem[key]
+
+  if (key === 'isActive') {
+    return value === false ? 'Inactivo' : 'Activo'
+  }
+
+  if (value === undefined || value === null || value === '') {
+    return '-'
+  }
+
+  return value
+}
+
+function getMobileTitle(item) {
+  const titleField = getHeaderFields()[0]
+
+  return titleField ? formatMobileValue(item, titleField.key) : deleteItemLabel.value
+}
+
+function getMobileSubtitle(item) {
+  const subtitleField = getHeaderFields()[1]
+
+  return subtitleField ? formatMobileValue(item, subtitleField.key) : props.singularTitle
+}
+
+function getMobileDetailFields(item) {
+  return getHeaderFields()
+    .slice(2)
+    .map((field) => ({
+      key: field.key,
+      title: field.title,
+      value: formatMobileValue(item, field.key),
+    }))
+}
+
 function shouldShowField(field) {
   return typeof field.showWhen === 'function' ? field.showWhen(form) : true
 }
@@ -458,6 +568,45 @@ function formatDateValue(value) {
   animation-delay: 112ms;
 }
 
+.controlcash-mobile-list {
+  display: grid;
+  gap: 12px;
+}
+
+.controlcash-mobile-record {
+  padding: 14px !important;
+}
+
+.controlcash-mobile-record :deep(.v-list-item__append) {
+  align-self: flex-start;
+}
+
+.controlcash-mobile-record-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.controlcash-mobile-record-field {
+  background: rgba(148, 163, 184, 0.12);
+  border-radius: 8px;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.controlcash-mobile-record-field span {
+  color: rgba(var(--v-theme-on-surface), 0.66);
+  font-size: 0.74rem;
+}
+
+.controlcash-mobile-record-field strong {
+  font-size: 0.86rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 @keyframes controlcash-row-in {
   from {
     opacity: 0;
@@ -467,6 +616,12 @@ function formatDateValue(value) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 420px) {
+  .controlcash-mobile-record-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

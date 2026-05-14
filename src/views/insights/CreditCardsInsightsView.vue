@@ -585,13 +585,51 @@ function getDaysBetween(startDate, endDate) {
 }
 
 @media (max-width: 700px) {
+  .controlcash-credit-metric {
+    min-height: 132px;
+  }
+
+  .controlcash-donut {
+    max-width: 220px;
+  }
+
+  .controlcash-donut-track,
+  .controlcash-donut-value {
+    stroke-width: 18;
+  }
+
+  .controlcash-donut-percent {
+    font-size: 24px;
+  }
+
+  .controlcash-bars {
+    gap: 14px;
+  }
+
   .controlcash-bar-row {
     align-items: start;
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .controlcash-bar-amount {
     text-align: left;
+  }
+
+  .controlcash-bar-track {
+    height: 12px;
+  }
+
+  .controlcash-line-chart {
+    min-height: 190px;
+  }
+
+  .controlcash-chart-label {
+    font-size: 11px;
+  }
+
+  .controlcash-payment-summary {
+    min-width: 76px;
   }
 }
 </style>

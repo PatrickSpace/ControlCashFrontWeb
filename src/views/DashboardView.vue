@@ -776,9 +776,14 @@ function getCategoryMonthlyExpense(categoryId) {
 }
 
 @media (max-width: 600px) {
+  .controlcash-metric-card {
+    min-height: 132px;
+  }
+
   .controlcash-period-actions {
     align-items: stretch;
     flex-direction: column;
+    gap: 10px;
   }
 
   .controlcash-period-combobox {
@@ -789,6 +794,20 @@ function getCategoryMonthlyExpense(categoryId) {
 
   .controlcash-card-amount {
     min-width: 78px;
+  }
+
+  .controlcash-networth,
+  .controlcash-category-summary {
+    padding: 16px;
+  }
+
+  .controlcash-networth .text-display-small {
+    font-size: 1.75rem;
+    line-height: 1.15;
+  }
+
+  .controlcash-list-item :deep(.v-list-item__append) {
+    padding-inline-start: 8px;
   }
 }
 </style>

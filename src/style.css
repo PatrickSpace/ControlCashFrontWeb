@@ -263,6 +263,18 @@ body {
   min-width: 0;
 }
 
+.controlcash-dashboard :is(.v-row),
+.controlcash-insight-page :is(.v-row),
+.controlcash-credit-page :is(.v-row) {
+  margin-inline: -8px;
+}
+
+.controlcash-dashboard :is(.v-col),
+.controlcash-insight-page :is(.v-col),
+.controlcash-credit-page :is(.v-col) {
+  padding: 8px;
+}
+
 .controlcash-page-enter-active,
 .controlcash-page-leave-active {
   transition:
@@ -462,6 +474,18 @@ body {
 
   .controlcash-page-container {
     padding: 76px 12px 18px !important;
+  }
+
+  .controlcash-dashboard :is(.v-row),
+  .controlcash-insight-page :is(.v-row),
+  .controlcash-credit-page :is(.v-row) {
+    margin-inline: -6px;
+  }
+
+  .controlcash-dashboard :is(.v-col),
+  .controlcash-insight-page :is(.v-col),
+  .controlcash-credit-page :is(.v-col) {
+    padding: 6px;
   }
 
   .controlcash-card-title {

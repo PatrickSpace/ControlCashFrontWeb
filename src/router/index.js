@@ -6,6 +6,7 @@ import BudgetsView from '../views/crud/BudgetsView.vue'
 import CardsView from '../views/crud/CardsView.vue'
 import CategoriesView from '../views/crud/CategoriesView.vue'
 import TransactionsView from '../views/crud/TransactionsView.vue'
+import ActionsView from '../views/ActionsView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import AccountsInsightsView from '../views/insights/AccountsInsightsView.vue'
 import BudgetsInsightsView from '../views/insights/BudgetsInsightsView.vue'
@@ -64,6 +65,14 @@ const routes = [
     path: '/transactions',
     name: 'transactions',
     component: TransactionsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/actions',
+    name: 'actions',
+    component: ActionsView,
     meta: {
       requiresAuth: true,
     },

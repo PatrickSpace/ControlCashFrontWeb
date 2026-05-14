@@ -42,6 +42,129 @@
       </v-col>
     </v-row>
 
+    <v-row class="mb-2" dense>
+      <v-col cols="12" lg="5">
+        <v-card class="controlcash-panel controlcash-spend-advice-card fill-height" elevation="0">
+          <v-card-text class="pa-5">
+            <div class="d-flex align-start justify-space-between ga-3">
+              <div>
+                <div class="text-body-medium text-medium-emphasis">Puedes gastar con tarjeta</div>
+                <div class="text-display-small font-weight-bold mt-1">
+                  {{ formatMoney(recommendedSpendAmount) }}
+                </div>
+                <div class="text-body-small text-medium-emphasis mt-2">
+                  Margen recomendado sin pasar {{ healthyUtilizationTarget }}% de uso.
+                </div>
+                <div class="text-body-medium font-weight-medium mt-3">
+                  {{ dailyCardSpendLabel }}
+                </div>
+              </div>
+              <v-avatar color="primary" rounded="lg" size="52" variant="tonal">
+                <v-icon icon="mdi-credit-card-check-outline" size="30" />
+              </v-avatar>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <div class="d-flex justify-space-between mb-2">
+              <span class="text-medium-emphasis">Disponible total</span>
+              <strong>{{ formatMoney(totalCreditAvailable) }}</strong>
+            </div>
+            <div class="d-flex justify-space-between">
+              <span class="text-medium-emphasis">Uso actual</span>
+              <strong>{{ Math.round(totalCreditUsage) }}%</strong>
+            </div>
+
+            <v-list
+              v-if="cardDailySpendRows.length"
+              bg-color="transparent"
+              class="controlcash-card-daily-list mt-4 pa-0"
+            >
+              <v-list-item
+                v-for="card in cardDailySpendRows"
+                :key="card.id"
+                class="controlcash-list-item mb-2"
+                rounded="lg"
+              >
+                <v-list-item-title>{{ card.name }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ formatMoney(card.dailySpend) }} diarios · corte en {{ card.daysToBilling }} días
+                </v-list-item-subtitle>
+                <template #append>
+                  <div class="text-right controlcash-card-amount">
+                    <div class="font-weight-bold">{{ formatMoney(card.spendRoom) }}</div>
+                    <div class="text-caption text-medium-emphasis">
+                      {{ Math.round(card.usage) }}% usado
+                    </div>
+                  </div>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" lg="7">
+        <v-card class="controlcash-panel fill-height" elevation="0">
+          <v-card-title class="controlcash-card-title px-5 py-4">
+            <div class="d-flex align-center ga-3">
+              <v-icon color="primary" icon="mdi-credit-card-search-outline" />
+              <span>Tarjeta recomendada para gastar ahora</span>
+            </div>
+          </v-card-title>
+          <v-card-text class="pa-5">
+            <div v-if="recommendedCard" class="controlcash-recommended-card">
+              <div>
+                <div class="text-h5 font-weight-bold">{{ recommendedCard.name }}</div>
+                <div class="text-body-medium text-medium-emphasis">{{ recommendedCard.bank }}</div>
+              </div>
+              <div class="controlcash-recommended-card-metrics">
+                <div>
+                  <span>Margen recomendado</span>
+                  <strong>{{ formatMoney(recommendedCard.spendRoom) }}</strong>
+                </div>
+                <div>
+                  <span>Disponible</span>
+                  <strong>{{ formatMoney(recommendedCard.available) }}</strong>
+                </div>
+                <div>
+                  <span>Uso</span>
+                  <strong>{{ Math.round(recommendedCard.usage) }}%</strong>
+                </div>
+              </div>
+              <v-progress-linear
+                class="mt-4"
+                :color="recommendedCard.usageColor"
+                height="9"
+                :model-value="recommendedCard.usage"
+                rounded
+              />
+              <div class="controlcash-card-calendar mt-4">
+                <v-chip color="primary" prepend-icon="mdi-calendar-end" variant="tonal">
+                  Cierra en {{ recommendedCard.daysToBilling }} días
+                </v-chip>
+                <v-chip :color="recommendedCard.paymentColor" prepend-icon="mdi-calendar-clock" variant="tonal">
+                  Pago en {{ recommendedCard.daysToPayment }} días
+                </v-chip>
+              </div>
+              <div class="text-body-small text-medium-emphasis mt-4">
+                {{ recommendedCard.reason }}
+              </div>
+            </div>
+
+            <v-alert
+              v-else
+              color="primary"
+              icon="mdi-credit-card-plus-outline"
+              variant="tonal"
+            >
+              Registra una tarjeta activa con línea de crédito para recibir una recomendación.
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
     <v-row dense>
       <v-col v-for="metric in mainMetrics" :key="metric.title" cols="12" md="6" xl="3">
         <v-card class="controlcash-panel controlcash-metric-card fill-height" elevation="0">
@@ -59,6 +182,143 @@
               <v-icon :color="metric.trendColor" :icon="metric.trendIcon" size="18" />
               <span>{{ metric.caption }}</span>
             </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-row class="mt-2" dense>
+      <v-col cols="12" lg="5">
+        <v-card class="controlcash-panel fill-height" elevation="0">
+          <v-card-title class="controlcash-card-title px-5 py-4">
+            <div class="d-flex align-center ga-3">
+              <v-icon color="primary" icon="mdi-chart-donut" />
+              <span>Presupuestos</span>
+            </div>
+          </v-card-title>
+          <v-card-text class="pa-5">
+            <div class="d-flex align-center justify-space-between mb-4">
+              <div>
+                <div class="text-body-medium text-medium-emphasis">Uso mensual</div>
+                <div class="text-h5 font-weight-bold">{{ budgetUsageLabel }}</div>
+              </div>
+              <v-avatar color="primary" rounded="lg" size="52" variant="tonal">
+                <v-icon icon="mdi-wallet-bifold-outline" size="28" />
+              </v-avatar>
+            </div>
+
+            <v-progress-linear
+              color="primary"
+              height="10"
+              :model-value="budgetUsagePercent"
+              rounded
+            />
+
+            <v-list bg-color="transparent" class="mt-5 pa-0">
+              <v-list-item
+                v-for="budget in budgetRows"
+                :key="budget.id"
+                class="controlcash-list-item mb-3"
+                rounded="lg"
+              >
+                <v-list-item-title>{{ budget.name }}</v-list-item-title>
+                <v-list-item-subtitle>{{ budget.categoryLabel }}</v-list-item-subtitle>
+                <template #append>
+                  <div class="text-right controlcash-card-amount">
+                    <div class="font-weight-bold">{{ formatMoney(budget.spent) }}</div>
+                    <div class="text-caption text-medium-emphasis">
+                      de {{ formatMoney(budget.limit) }}
+                    </div>
+                  </div>
+                </template>
+                <v-progress-linear
+                  class="mt-3"
+                  :color="budget.color"
+                  height="7"
+                  :model-value="budget.percent"
+                  rounded
+                />
+              </v-list-item>
+            </v-list>
+
+            <v-alert
+              v-if="!budgetRows.length"
+              color="primary"
+              icon="mdi-chart-donut"
+              variant="tonal"
+            >
+              Crea presupuestos mensuales para controlar límites por categoría.
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" lg="7">
+        <v-card class="controlcash-panel fill-height" elevation="0">
+          <v-card-title class="controlcash-card-title px-5 py-4">
+            <div class="d-flex align-center ga-3">
+              <v-icon color="primary" icon="mdi-wallet-bifold-outline" />
+              <span>Dónde puedes gastar más o menos</span>
+            </div>
+          </v-card-title>
+          <v-card-text class="pa-5">
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <div class="controlcash-budget-advice is-positive">
+                  <v-avatar color="success" rounded="lg" size="42" variant="tonal">
+                    <v-icon icon="mdi-arrow-up-circle-outline" />
+                  </v-avatar>
+                  <div>
+                    <div class="text-body-medium text-medium-emphasis">Puedes gastar más en</div>
+                    <div class="text-h6 font-weight-bold mt-1">
+                      {{ bestBudgetToSpend?.name || 'Sin presupuesto' }}
+                    </div>
+                    <div class="text-body-small text-medium-emphasis mt-1">
+                      {{ bestBudgetToSpend ? `${formatMoney(bestBudgetToSpend.remaining)} disponibles` : 'Crea presupuestos para recibir sugerencias.' }}
+                    </div>
+                  </div>
+                </div>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <div class="controlcash-budget-advice is-warning">
+                  <v-avatar :color="tightestBudget?.color || 'warning'" rounded="lg" size="42" variant="tonal">
+                    <v-icon icon="mdi-alert-circle-outline" />
+                  </v-avatar>
+                  <div>
+                    <div class="text-body-medium text-medium-emphasis">Gasta menos en</div>
+                    <div class="text-h6 font-weight-bold mt-1">
+                      {{ tightestBudget?.name || 'Sin alerta' }}
+                    </div>
+                    <div class="text-body-small text-medium-emphasis mt-1">
+                      {{ tightestBudget ? `${Math.round(tightestBudget.percent)}% usado · ${formatMoney(tightestBudget.remaining)} restante` : 'Ningún presupuesto está presionado.' }}
+                    </div>
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+
+            <v-list v-if="budgetAdviceRows.length" bg-color="transparent" class="mt-5 pa-0">
+              <v-list-item
+                v-for="budget in budgetAdviceRows"
+                :key="budget.id"
+                class="controlcash-list-item mb-3"
+                rounded="lg"
+              >
+                <v-list-item-title>{{ budget.name }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ budget.categoryLabel }} · {{ budget.advice }}
+                </v-list-item-subtitle>
+                <template #append>
+                  <div class="text-right controlcash-card-amount">
+                    <div class="font-weight-bold">{{ formatMoney(budget.remaining) }}</div>
+                    <div class="text-caption text-medium-emphasis">
+                      {{ Math.round(budget.percent) }}% usado
+                    </div>
+                  </div>
+                </template>
+              </v-list-item>
+            </v-list>
           </v-card-text>
         </v-card>
       </v-col>
@@ -188,72 +448,7 @@
     </v-row>
 
     <v-row class="mt-2" dense>
-      <v-col cols="12" lg="5">
-        <v-card class="controlcash-panel fill-height" elevation="0">
-          <v-card-title class="controlcash-card-title px-5 py-4">
-            <div class="d-flex align-center ga-3">
-              <v-icon color="primary" icon="mdi-chart-donut" />
-              <span>Presupuestos</span>
-            </div>
-          </v-card-title>
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center justify-space-between mb-4">
-              <div>
-                <div class="text-body-medium text-medium-emphasis">Uso mensual</div>
-                <div class="text-h5 font-weight-bold">{{ budgetUsageLabel }}</div>
-              </div>
-              <v-avatar color="primary" rounded="lg" size="52" variant="tonal">
-                <v-icon icon="mdi-wallet-bifold-outline" size="28" />
-              </v-avatar>
-            </div>
-
-            <v-progress-linear
-              color="primary"
-              height="10"
-              :model-value="budgetUsagePercent"
-              rounded
-            />
-
-            <v-list bg-color="transparent" class="mt-5 pa-0">
-              <v-list-item
-                v-for="budget in budgetRows"
-                :key="budget.id"
-                class="controlcash-list-item mb-3"
-                rounded="lg"
-              >
-                <v-list-item-title>{{ budget.name }}</v-list-item-title>
-                <v-list-item-subtitle>{{ budget.categoryLabel }}</v-list-item-subtitle>
-                <template #append>
-                  <div class="text-right controlcash-card-amount">
-                    <div class="font-weight-bold">{{ formatMoney(budget.spent) }}</div>
-                    <div class="text-caption text-medium-emphasis">
-                      de {{ formatMoney(budget.limit) }}
-                    </div>
-                  </div>
-                </template>
-                <v-progress-linear
-                  class="mt-3"
-                  :color="budget.color"
-                  height="7"
-                  :model-value="budget.percent"
-                  rounded
-                />
-              </v-list-item>
-            </v-list>
-
-            <v-alert
-              v-if="!budgetRows.length"
-              color="primary"
-              icon="mdi-chart-donut"
-              variant="tonal"
-            >
-              Crea presupuestos mensuales para controlar límites por categoría.
-            </v-alert>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" lg="7">
+      <v-col cols="12">
         <v-card class="controlcash-panel fill-height" elevation="0">
           <v-card-title class="controlcash-card-title px-5 py-4">
             <div class="d-flex align-center ga-3">
@@ -383,6 +578,8 @@ const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
 const currentDate = new Date()
 const selectedPeriod = ref(formatPeriodValue(currentDate))
+const healthyUtilizationTarget = 80
+const flexibleUtilizationTarget = 70
 
 const accountTypeLabels = {
   cash: 'Efectivo',
@@ -484,6 +681,82 @@ const totalCardDebt = computed(() =>
   cardDebts.value.reduce((total, card) => total + Number(card.debt || 0), 0),
 )
 
+const creditCardAdviceRows = computed(() =>
+  cardsStore.activeCards
+    .map((card) => {
+      const limit = Number(card.creditLimit || 0)
+      const debt = Math.max(getCardDebt(card.id), 0)
+      const available = Math.max(limit - debt, 0)
+      const usage = limit > 0 ? Math.min((debt / limit) * 100, 100) : 0
+      const healthyRoom = Math.max(limit * (healthyUtilizationTarget / 100) - debt, 0)
+      const flexibleRoom = Math.max(limit * (flexibleUtilizationTarget / 100) - debt, 0)
+      const spendRoom = Math.min(available, healthyRoom || flexibleRoom)
+      const daysToBilling = getDaysToCardDay(card.billingDay)
+      const daysToPayment = getDaysToCardDay(card.paymentDueDay)
+      const utilizationScore = Math.max(100 - usage, 0)
+      const timingScore = daysToBilling * 2
+      const paymentPenalty = debt > 0 && daysToPayment <= 5 ? 35 : 0
+      const overusePenalty = usage >= 90 ? 45 : usage >= 70 ? 20 : 0
+      const score = spendRoom + utilizationScore + timingScore - paymentPenalty - overusePenalty
+
+      return {
+        ...card,
+        available,
+        daysToBilling,
+        daysToPayment,
+        debt,
+        limit,
+        paymentColor: daysToPayment <= 5 ? 'error' : daysToPayment <= 10 ? 'warning' : 'primary',
+        reason: getCardRecommendationReason({ available, daysToBilling, daysToPayment, debt, spendRoom, usage }),
+        score,
+        spendRoom,
+        usage,
+        usageColor: usage >= 85 ? 'error' : usage >= 65 ? 'warning' : 'primary',
+      }
+    })
+    .filter((card) => card.limit > 0 && card.available > 0)
+    .sort((first, second) => second.score - first.score),
+)
+
+const recommendedCard = computed(() => creditCardAdviceRows.value[0])
+
+const recommendedSpendAmount = computed(() =>
+  creditCardAdviceRows.value.reduce((total, card) => total + Number(card.spendRoom || 0), 0),
+)
+
+const dailyCardSpend = computed(() => {
+  if (!recommendedCard.value) {
+    return 0
+  }
+
+  return recommendedCard.value.spendRoom / Math.max(recommendedCard.value.daysToBilling, 1)
+})
+
+const dailyCardSpendLabel = computed(() =>
+  recommendedCard.value
+    ? `${formatMoney(dailyCardSpend.value)} diarios hasta el próximo corte de ${recommendedCard.value.name}.`
+    : 'Agrega una tarjeta para calcular tu gasto diario recomendado.',
+)
+
+const cardDailySpendRows = computed(() =>
+  creditCardAdviceRows.value.map((card) => ({
+    ...card,
+    dailySpend: card.spendRoom / Math.max(card.daysToBilling, 1),
+  })),
+)
+
+const totalCreditAvailable = computed(() =>
+  creditCardAdviceRows.value.reduce((total, card) => total + Number(card.available || 0), 0),
+)
+
+const totalCreditLimit = computed(() =>
+  cardsStore.activeCards.reduce((total, card) => total + Number(card.creditLimit || 0), 0),
+)
+
+const totalCreditUsage = computed(() =>
+  totalCreditLimit.value > 0 ? Math.min((totalCardDebt.value / totalCreditLimit.value) * 100, 100) : 0,
+)
+
 const totalLiabilities = computed(() => {
   const negativeAccountBalances = accountBalances.value.reduce(
     (total, account) => total + Math.abs(Math.min(Number(account.balance || 0), 0)),
@@ -501,6 +774,7 @@ const budgetRows = computed(() =>
       const limit = Number(budget.limitAmount || 0)
       const spent = getCategoryMonthlyExpense(budget.categoryId)
       const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0
+      const remaining = limit - spent
 
       return {
         ...budget,
@@ -508,6 +782,7 @@ const budgetRows = computed(() =>
         color: percent >= 90 ? 'error' : percent >= 70 ? 'warning' : 'primary',
         limit,
         percent,
+        remaining,
         spent,
       }
     })
@@ -528,6 +803,32 @@ const budgetUsagePercent = computed(() =>
 
 const budgetUsageLabel = computed(() =>
   `${formatMoney(totalBudgetSpent.value)} / ${formatMoney(totalBudgetLimit.value)}`,
+)
+
+const bestBudgetToSpend = computed(() =>
+  budgetRows.value
+    .filter((budget) => budget.remaining > 0)
+    .sort((first, second) => second.remaining - first.remaining)[0],
+)
+
+const tightestBudget = computed(() =>
+  budgetRows.value
+    .filter((budget) => budget.spent > 0 || budget.percent >= 70)
+    .sort((first, second) => second.percent - first.percent)[0],
+)
+
+const budgetAdviceRows = computed(() =>
+  budgetRows.value.slice(0, 4).map((budget) => ({
+    ...budget,
+    advice:
+      budget.remaining < 0
+        ? 'Presupuesto excedido'
+        : budget.percent >= 90
+          ? 'Evita nuevos gastos'
+          : budget.percent >= 70
+            ? 'Gasta con cuidado'
+            : 'Todavía hay margen',
+  })),
 )
 
 const categoryExpenseRows = computed(() => {
@@ -626,6 +927,38 @@ function getTransactionDate(date) {
 
   const transactionDate = new Date(`${date}T00:00:00`)
   return Number.isNaN(transactionDate.getTime()) ? null : transactionDate
+}
+
+function getDaysToCardDay(dayOfMonth) {
+  const safeDay = Math.min(Math.max(Number(dayOfMonth || 1), 1), 31)
+  const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+  const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), safeDay)
+
+  if (targetDate < today) {
+    targetDate.setMonth(targetDate.getMonth() + 1)
+  }
+
+  return Math.ceil((targetDate - today) / (24 * 60 * 60 * 1000))
+}
+
+function getCardRecommendationReason(card) {
+  if (card.spendRoom <= 0) {
+    return 'Tiene línea disponible, pero ya superó el margen recomendado de uso.'
+  }
+
+  if (card.debt > 0 && card.daysToPayment <= 5) {
+    return 'Aún conviene por margen, pero revisa el pago próximo antes de aumentar el saldo.'
+  }
+
+  if (card.daysToBilling >= 20 && card.usage < healthyUtilizationTarget) {
+    return 'Tiene buen margen, bajo uso y más días antes del cierre del ciclo.'
+  }
+
+  if (card.usage < healthyUtilizationTarget) {
+    return 'Tiene bajo uso frente a su límite y margen saludable disponible.'
+  }
+
+  return 'Es la mejor opción disponible por balance entre límite, uso actual y fechas.'
 }
 
 function formatPeriodValue(date) {
@@ -746,6 +1079,10 @@ function getCategoryMonthlyExpense(categoryId) {
   min-height: 148px;
 }
 
+.controlcash-spend-advice-card {
+  min-height: 100%;
+}
+
 .controlcash-period-actions {
   align-items: center;
   display: flex;
@@ -771,6 +1108,60 @@ function getCategoryMonthlyExpense(categoryId) {
   min-width: 96px;
 }
 
+.controlcash-recommended-card {
+  display: grid;
+  gap: 4px;
+}
+
+.controlcash-recommended-card-metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.controlcash-recommended-card-metrics div {
+  background: var(--cc-list-item);
+  border-radius: 8px;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.controlcash-recommended-card-metrics span {
+  color: rgba(var(--v-theme-on-surface), 0.66);
+  font-size: 0.76rem;
+}
+
+.controlcash-recommended-card-metrics strong {
+  overflow-wrap: anywhere;
+}
+
+.controlcash-budget-advice {
+  align-items: flex-start;
+  background: var(--cc-list-item);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  height: 100%;
+  padding: 16px;
+}
+
+.controlcash-budget-advice > div:last-child {
+  min-width: 0;
+}
+
+.controlcash-card-calendar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.controlcash-card-daily-list {
+  display: grid;
+  gap: 8px;
+}
+
 .controlcash-list-item :deep(.v-list-item__content) {
   min-width: 0;
 }
@@ -778,6 +1169,11 @@ function getCategoryMonthlyExpense(categoryId) {
 @media (max-width: 600px) {
   .controlcash-metric-card {
     min-height: 132px;
+  }
+
+  .controlcash-spend-advice-card .text-display-small {
+    font-size: 1.85rem;
+    line-height: 1.15;
   }
 
   .controlcash-period-actions {
@@ -794,6 +1190,20 @@ function getCategoryMonthlyExpense(categoryId) {
 
   .controlcash-card-amount {
     min-width: 78px;
+  }
+
+  .controlcash-recommended-card-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .controlcash-card-calendar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .controlcash-card-calendar .v-chip {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .controlcash-networth,

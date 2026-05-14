@@ -16,14 +16,6 @@
               <v-spacer />
             </div>
 
-            <v-text-field
-              class="controlcash-field mt-8"
-              density="compact"
-              hide-details
-              placeholder="Search"
-              prepend-inner-icon="mdi-magnify"
-              variant="solo-filled"
-            />
           </v-sheet>
 
           <v-list v-model:opened="openedNavigationGroups" class="pt-2" density="comfortable" nav>
@@ -139,17 +131,7 @@
             >ControlCash</v-toolbar-title
           >
 
-          <div class="controlcash-search-wrap d-none d-md-flex">
-            <v-text-field
-              class="controlcash-field"
-              density="compact"
-              hide-details
-              placeholder="Search"
-              prepend-inner-icon="mdi-magnify"
-              variant="solo-filled"
-            />
-          </div>
-
+          <v-spacer />
           <ThemeToggle />
         </v-app-bar>
       </template>
@@ -207,6 +189,16 @@ const primaryNavigationItems = [
     icon: "mdi-home-outline",
     to: "/dashboard",
   },
+  {
+    title: "Transacciones",
+    icon: "mdi-swap-horizontal",
+    to: "/transactions",
+  },
+  {
+    title: "Acciones",
+    icon: "mdi-lightning-bolt-outline",
+    to: "/actions",
+  },
 ];
 
 const configurationNavigationItems = [
@@ -224,11 +216,6 @@ const configurationNavigationItems = [
     title: "Categorías",
     icon: "mdi-shape-outline",
     to: "/categories",
-  },
-  {
-    title: "Transacciones",
-    icon: "mdi-swap-horizontal",
-    to: "/transactions",
   },
   {
     title: "Presupuestos",

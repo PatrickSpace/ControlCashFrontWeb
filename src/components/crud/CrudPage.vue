@@ -281,7 +281,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 
 import { useNotificationStore } from '../../stores/notifications'
@@ -334,6 +334,14 @@ const props = defineProps({
   preparePayload: {
     type: Function,
     default: (payload) => payload,
+  },
+  createDefaults: {
+    type: Object,
+    default: () => ({}),
+  },
+  openCreateSignal: {
+    type: [Number, String],
+    default: '',
   },
 })
 
@@ -438,6 +446,16 @@ onBeforeUnmount(() => {
   props.store.stopRealtime()
 })
 
+watch(
+  () => props.openCreateSignal,
+  (signal) => {
+    if (signal !== undefined && signal !== null && signal !== '') {
+      openCreate()
+    }
+  },
+  { immediate: true },
+)
+
 function getInitialValue(field, source = {}) {
   if (source[field.key] !== undefined) {
     return source[field.key]
@@ -459,7 +477,7 @@ function resetForm(source = {}) {
 function openCreate() {
   editingItem.value = null
   saving.value = false
-  resetForm()
+  resetForm(props.createDefaults)
   formDialog.value = true
 }
 

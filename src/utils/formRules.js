@@ -14,5 +14,8 @@ export const formRules = {
     const year = Number(value)
     return Number.isInteger(year) && year >= 2000 && year <= 2100 || 'Ingresa un año válido.'
   },
-  date: (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value)) || 'Usa formato YYYY-MM-DD.',
+  date: (value) =>
+    value instanceof Date && !Number.isNaN(value.getTime()) ||
+    /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ||
+    'Selecciona una fecha válida.',
 }

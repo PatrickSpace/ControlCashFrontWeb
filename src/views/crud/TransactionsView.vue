@@ -7,6 +7,7 @@
     :headers="headers"
     icon="mdi-swap-horizontal"
     :items="filteredTransactions"
+    :prepare-payload="prepareTransactionPayload"
     singular-title="transacción"
     :store="transactionsStore"
     subtitle="Fuente única para balances, crédito usado, presupuestos e insights."
@@ -36,6 +37,21 @@
             </template>
           </v-select>
         </v-col>
+
+        <v-col cols="12" md="5" lg="4">
+          <v-select
+            v-model="selectedExpenseType"
+            class="controlcash-field"
+            clearable
+            density="comfortable"
+            hide-details
+            :items="expenseTypeFilterItems"
+            item-title="title"
+            item-value="value"
+            label="Filtrar por tipo de gasto"
+            prepend-inner-icon="mdi-cash-multiple"
+          />
+        </v-col>
       </v-row>
     </template>
   </CrudPage>
@@ -56,6 +72,7 @@ const cardsStore = useCardsStore()
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
 const selectedAccountId = ref(null)
+const selectedExpenseType = ref(null)
 
 const headers = [
   { title: 'Fecha', key: 'date' },
@@ -94,6 +111,12 @@ const categoryItems = computed(() =>
   })),
 )
 
+const expenseTypeFilterItems = [
+  { title: 'Efectivo', value: 'cash' },
+  { title: 'Débito', value: 'debit' },
+  { title: 'Crédito', value: 'credit' },
+]
+
 const fields = computed(() => [
   {
     key: 'type',
@@ -104,7 +127,6 @@ const fields = computed(() => [
       { title: 'Ingreso', value: 'income' },
       { title: 'Gasto', value: 'expense' },
       { title: 'Transferencia', value: 'transfer' },
-      { title: 'Compra con tarjeta', value: 'card_purchase' },
       { title: 'Pago de tarjeta', value: 'card_payment' },
     ],
     rules: [formRules.required],
@@ -131,6 +153,7 @@ const fields = computed(() => [
     label: 'Método de pago',
     type: 'select',
     defaultValue: 'debit',
+    showWhen: (form) => form.type === 'expense',
     items: [
       { title: 'Efectivo', value: 'cash' },
       { title: 'Débito', value: 'debit' },
@@ -147,13 +170,29 @@ const fields = computed(() => [
     label: 'Categoría',
     type: 'select',
     items: categoryItems.value,
+    showWhen: (form) => ['income', 'expense'].includes(form.type),
     md: 6,
   },
   {
     key: 'accountId',
-    label: 'Cuenta origen',
+    label: (form) => {
+      if (form.type === 'transfer') {
+        return 'Cuenta origen'
+      }
+
+      if (form.type === 'expense') {
+        return 'Cuenta a cargo'
+      }
+
+      return 'Cuenta'
+    },
     type: 'select',
     items: accountItems.value,
+    showWhen: (form) =>
+      form.type === 'income' ||
+      form.type === 'transfer' ||
+      form.type === 'card_payment' ||
+      (form.type === 'expense' && ['cash', 'debit'].includes(form.paymentMethod)),
     md: 6,
   },
   {
@@ -161,20 +200,16 @@ const fields = computed(() => [
     label: 'Cuenta destino',
     type: 'select',
     items: accountItems.value,
+    showWhen: (form) => form.type === 'transfer',
     md: 6,
   },
   {
     key: 'cardId',
-    label: 'Tarjeta',
+    label: 'Tarjeta de crédito',
     type: 'select',
     items: cardItems.value,
-    md: 6,
-  },
-  {
-    key: 'installments',
-    label: 'Cuotas',
-    type: 'number',
-    defaultValue: 1,
+    showWhen: (form) =>
+      form.type === 'card_payment' || (form.type === 'expense' && form.paymentMethod === 'credit'),
     md: 6,
   },
 ])
@@ -188,21 +223,23 @@ const transactionTypeLabels = {
 }
 
 const emptyTransactionsText = computed(() =>
-  selectedAccountId.value
-    ? 'No hay transacciones para la cuenta seleccionada.'
+  selectedAccountId.value || selectedExpenseType.value
+    ? 'No hay transacciones para los filtros seleccionados.'
     : 'Registra tu primer movimiento financiero.',
 )
 
 const filteredTransactions = computed(() => {
-  if (!selectedAccountId.value) {
-    return transactionsStore.transactionsByDate
-  }
-
-  return transactionsStore.transactionsByDate.filter(
-    (transaction) =>
+  return transactionsStore.transactionsByDate.filter((transaction) => {
+    const matchesAccount =
+      !selectedAccountId.value ||
       transaction.accountId === selectedAccountId.value ||
-      transaction.destinationAccountId === selectedAccountId.value,
-  )
+      transaction.destinationAccountId === selectedAccountId.value
+    const matchesExpenseType =
+      !selectedExpenseType.value ||
+      (transaction.type === 'expense' && transaction.paymentMethod === selectedExpenseType.value)
+
+    return matchesAccount && matchesExpenseType
+  })
 })
 
 onMounted(() => {
@@ -233,5 +270,34 @@ function formatRow(transaction) {
     accountLabel: findName(accountsStore.items, transaction.accountId),
     cardLabel: findName(cardsStore.items, transaction.cardId),
   }
+}
+
+function prepareTransactionPayload(payload) {
+  const nextPayload = {
+    ...payload,
+    paymentMethod: payload.type === 'expense' ? payload.paymentMethod || 'debit' : null,
+    categoryId: ['income', 'expense'].includes(payload.type) ? payload.categoryId : null,
+    accountId: shouldUseAccount(payload) ? payload.accountId : null,
+    destinationAccountId: payload.type === 'transfer' ? payload.destinationAccountId : null,
+    cardId: shouldUseCard(payload) ? payload.cardId : null,
+  }
+
+  return nextPayload
+}
+
+function shouldUseAccount(transaction) {
+  return (
+    transaction.type === 'income' ||
+    transaction.type === 'transfer' ||
+    transaction.type === 'card_payment' ||
+    (transaction.type === 'expense' && ['cash', 'debit'].includes(transaction.paymentMethod))
+  )
+}
+
+function shouldUseCard(transaction) {
+  return (
+    transaction.type === 'card_payment' ||
+    (transaction.type === 'expense' && transaction.paymentMethod === 'credit')
+  )
 }
 </script>

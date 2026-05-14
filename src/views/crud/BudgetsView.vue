@@ -35,12 +35,18 @@ const headers = [
   { title: 'Estado', key: 'isActive' },
 ]
 
-const categoryItems = computed(() =>
-  categoriesStore.activeCategories.map((category) => ({
-    title: category.name,
-    value: category.id,
-  })),
-)
+function getCategoryItems(editingBudget) {
+  const usedCategoryIds = budgetsStore.items
+    .filter((budget) => budget.id !== editingBudget?.id)
+    .map((budget) => budget.categoryId)
+
+  return categoriesStore.activeCategories
+    .filter((category) => !usedCategoryIds.includes(category.id))
+    .map((category) => ({
+      title: category.name,
+      value: category.id,
+    }))
+}
 
 const fields = computed(() => [
   { key: 'name', label: 'Nombre', rules: [formRules.required] },
@@ -48,8 +54,12 @@ const fields = computed(() => [
     key: 'categoryId',
     label: 'Categoría',
     type: 'select',
-    items: categoryItems.value,
-    rules: [formRules.required],
+    items: (_form, editingBudget) => getCategoryItems(editingBudget),
+    noDataText: 'Todas las categorías activas ya tienen un presupuesto.',
+    rules: (_form, editingBudget) => [
+      formRules.required,
+      (value) => isCategoryAvailable(value, editingBudget) || 'Esta categoría ya pertenece a otro presupuesto.',
+    ],
     md: 6,
   },
   {
@@ -113,5 +123,11 @@ function formatRow(budget) {
     periodLabel: budget.period === 'monthly' ? 'Mensual' : budget.period,
     limitAmountLabel: formatMoney(budget.limitAmount),
   }
+}
+
+function isCategoryAvailable(categoryId, editingBudget) {
+  return !budgetsStore.items.some(
+    (budget) => budget.id !== editingBudget?.id && budget.categoryId === categoryId,
+  )
 }
 </script>

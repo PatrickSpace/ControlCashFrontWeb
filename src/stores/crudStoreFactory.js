@@ -16,6 +16,10 @@ export function createCrudStoreState(service) {
     error.value = ''
   }
 
+  function setError(message) {
+    error.value = message
+  }
+
   async function runAction(action) {
     loading.value = true
     clearError()
@@ -124,5 +128,6 @@ export function createCrudStoreState(service) {
     getById,
     clear,
     clearError,
+    setError,
   }
 }

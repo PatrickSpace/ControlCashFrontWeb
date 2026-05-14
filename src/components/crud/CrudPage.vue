@@ -105,11 +105,11 @@
                     v-model="form[field.key]"
                     class="controlcash-field"
                     clearable
-                    :items="field.items || []"
+                    :items="getFieldItems(field)"
                     item-title="title"
                     item-value="value"
-                    :label="field.label"
-                    :rules="field.rules || []"
+                    :label="getFieldLabel(field)"
+                    :rules="getFieldRules(field)"
                   >
                     <template #no-data>
                       <v-list-item>
@@ -127,17 +127,30 @@
                     :items="booleanItems"
                     item-title="title"
                     item-value="value"
-                    :label="field.label"
-                    :rules="field.rules || []"
+                    :label="getFieldLabel(field)"
+                    :rules="getFieldRules(field)"
+                  />
+
+                  <v-date-input
+                    v-else-if="field.type === 'date'"
+                    v-model="form[field.key]"
+                    class="controlcash-field"
+                    clearable
+                    density="comfortable"
+                    :label="getFieldLabel(field)"
+                    prepend-icon=""
+                    prepend-inner-icon="mdi-calendar-month-outline"
+                    :rules="getFieldRules(field)"
+                    variant="outlined"
                   />
 
                   <v-text-field
                     v-else
                     v-model="form[field.key]"
                     class="controlcash-field"
-                    :label="field.label"
+                    :label="getFieldLabel(field)"
                     :prefix="field.prefix"
-                    :rules="field.rules || []"
+                    :rules="getFieldRules(field)"
                     :type="field.type || 'text'"
                   />
                 </v-col>
@@ -231,6 +244,10 @@ const props = defineProps({
     type: Function,
     default: (item) => item,
   },
+  preparePayload: {
+    type: Function,
+    default: (payload) => payload,
+  },
 })
 
 const formDialog = ref(false)
@@ -271,6 +288,18 @@ function getRawItem(item) {
 
 function shouldShowField(field) {
   return typeof field.showWhen === 'function' ? field.showWhen(form) : true
+}
+
+function getFieldLabel(field) {
+  return typeof field.label === 'function' ? field.label(form) : field.label
+}
+
+function getFieldItems(field) {
+  return typeof field.items === 'function' ? field.items(form, editingItem.value) : field.items || []
+}
+
+function getFieldRules(field) {
+  return typeof field.rules === 'function' ? field.rules(form, editingItem.value) : field.rules || []
 }
 
 onMounted(() => {
@@ -325,10 +354,11 @@ async function save() {
 
   saving.value = true
 
-  const payload = props.fields.reduce((nextPayload, field) => {
-    nextPayload[field.key] = form[field.key]
+  const rawPayload = props.fields.reduce((nextPayload, field) => {
+    nextPayload[field.key] = getPayloadValue(field, form[field.key])
     return nextPayload
   }, {})
+  const payload = props.preparePayload(rawPayload)
 
   try {
     if (editingItem.value) {
@@ -353,5 +383,33 @@ async function remove() {
   await props.store.removeItem(deletingItem.value.id)
   deleteDialog.value = false
   deletingItem.value = null
+}
+
+function getPayloadValue(field, value) {
+  if (field.type !== 'date') {
+    return value
+  }
+
+  return formatDateValue(value)
+}
+
+function formatDateValue(value) {
+  if (!value) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  return value
 }
 </script>

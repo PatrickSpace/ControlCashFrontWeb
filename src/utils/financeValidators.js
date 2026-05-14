@@ -132,6 +132,15 @@ function assignIfPresent(target, field, value) {
   }
 }
 
+function assignOptionalString(target, field, value, label) {
+  if (value === null) {
+    target[field] = null
+    return
+  }
+
+  assignIfPresent(target, field, normalizeString(value, label))
+}
+
 export function validateAccount(payload, options = {}) {
   const { partial = false } = options
   const account = {}
@@ -245,39 +254,36 @@ export function validateTransaction(payload, options = {}) {
   }
 
   if (shouldValidate(payload, 'categoryId', partial)) {
-    assignIfPresent(transaction, 'categoryId', normalizeString(payload.categoryId, 'Categoria'))
+    assignOptionalString(transaction, 'categoryId', payload.categoryId, 'Categoria')
   }
 
   if (shouldValidate(payload, 'accountId', partial)) {
-    assignIfPresent(transaction, 'accountId', normalizeString(payload.accountId, 'Cuenta'))
+    assignOptionalString(transaction, 'accountId', payload.accountId, 'Cuenta')
   }
 
   if (shouldValidate(payload, 'cardId', partial)) {
-    assignIfPresent(transaction, 'cardId', normalizeString(payload.cardId, 'Tarjeta'))
+    assignOptionalString(transaction, 'cardId', payload.cardId, 'Tarjeta')
   }
 
   if (shouldValidate(payload, 'destinationAccountId', partial)) {
-    assignIfPresent(
+    assignOptionalString(
       transaction,
       'destinationAccountId',
-      normalizeString(payload.destinationAccountId, 'Cuenta destino'),
+      payload.destinationAccountId,
+      'Cuenta destino',
     )
   }
 
   if (shouldValidate(payload, 'paymentMethod', partial)) {
-    assignIfPresent(
-      transaction,
-      'paymentMethod',
-      normalizeEnum(payload.paymentMethod, 'Metodo de pago', PAYMENT_METHODS),
-    )
-  }
-
-  if (shouldValidate(payload, 'installments', partial)) {
-    assignIfPresent(
-      transaction,
-      'installments',
-      normalizeInteger(payload.installments || 1, 'Cuotas', { min: 1, max: 60 }),
-    )
+    if (payload.paymentMethod === null) {
+      transaction.paymentMethod = null
+    } else {
+      assignIfPresent(
+        transaction,
+        'paymentMethod',
+        normalizeEnum(payload.paymentMethod, 'Metodo de pago', PAYMENT_METHODS),
+      )
+    }
   }
 
   if (!partial) {
@@ -292,8 +298,14 @@ function validateTransactionReferences(transaction) {
     throw new FinanceValidationError('Un ingreso necesita una cuenta.')
   }
 
-  if (transaction.type === 'expense' && !transaction.accountId) {
-    throw new FinanceValidationError('Un gasto necesita una cuenta.')
+  if (transaction.type === 'expense') {
+    if (transaction.paymentMethod === 'credit' && !transaction.cardId) {
+      throw new FinanceValidationError('Un gasto con credito necesita una tarjeta.')
+    }
+
+    if (transaction.paymentMethod !== 'credit' && !transaction.accountId) {
+      throw new FinanceValidationError('Un gasto en efectivo o debito necesita una cuenta.')
+    }
   }
 
   if (transaction.type === 'transfer') {

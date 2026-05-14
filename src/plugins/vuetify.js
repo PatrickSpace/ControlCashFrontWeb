@@ -2,6 +2,7 @@ import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
 import { createVuetify } from 'vuetify'
+import { VDateInput } from 'vuetify/labs/VDateInput'
 
 const savedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('controlcash-theme') : null
 const defaultTheme = ['controlCashDark', 'controlCashLight'].includes(savedTheme)
@@ -9,6 +10,9 @@ const defaultTheme = ['controlCashDark', 'controlCashLight'].includes(savedTheme
   : 'controlCashDark'
 
 export const vuetify = createVuetify({
+  components: {
+    VDateInput,
+  },
   defaults: {
     VCard: {
       rounded: 'lg',
@@ -18,6 +22,10 @@ export const vuetify = createVuetify({
       variant: 'outlined',
     },
     VSelect: {
+      density: 'comfortable',
+      variant: 'outlined',
+    },
+    VDateInput: {
       density: 'comfortable',
       variant: 'outlined',
     },

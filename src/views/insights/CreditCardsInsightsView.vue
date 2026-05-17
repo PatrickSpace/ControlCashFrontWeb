@@ -1,7 +1,7 @@
 <template>
   <v-container class="controlcash-page-container controlcash-credit-page pa-4 pa-md-8" fluid>
     <v-row align="center" class="mb-4" dense>
-      <v-col cols="12" md="8">
+      <v-col cols="12" md="7">
         <div class="d-flex align-center ga-3">
           <v-avatar color="primary" rounded="lg" size="44">
             <v-icon icon="mdi-credit-card-search-outline" size="26" />
@@ -9,16 +9,19 @@
           <div class="controlcash-title-block">
             <div class="text-headline-small font-weight-bold">Tarjetas de crédito</div>
             <div class="text-body-medium text-medium-emphasis">
-              Uso, deuda, pagos y tendencia de compras con crédito.
+              Uso, deuda, pagos y tendencia de compras con crédito {{ selectedPeriodScopeLabel }}.
             </div>
           </div>
         </div>
       </v-col>
 
-      <v-col class="d-flex justify-md-end" cols="12" md="4">
-        <v-chip color="primary" prepend-icon="mdi-credit-card-multiple-outline" variant="tonal">
-          {{ activeCards.length }} activas
-        </v-chip>
+      <v-col class="d-flex justify-md-end" cols="12" md="5">
+        <PeriodControls
+          v-model="selectedPeriod"
+          :items="periodOptions"
+          @reset="resetSelectedPeriod"
+          @show-all="showAllPeriods"
+        />
       </v-col>
     </v-row>
 
@@ -119,6 +122,16 @@
                 <div class="controlcash-bar-amount">
                   <strong>{{ Math.round(card.usage) }}%</strong>
                   <span>{{ formatMoney(card.debt) }}</span>
+                  <v-btn
+                    class="mt-2"
+                    color="primary"
+                    prepend-icon="mdi-credit-card-check-outline"
+                    size="small"
+                    variant="tonal"
+                    @click="openCardPaymentDialog(card)"
+                  >
+                    Pagar tarjeta
+                  </v-btn>
                 </div>
               </div>
             </div>
@@ -142,7 +155,7 @@
           <v-card-title class="controlcash-card-title px-5 py-4">
             <div class="d-flex align-center ga-3">
               <v-icon color="primary" icon="mdi-chart-line" />
-              <span>Compras con crédito por mes</span>
+              <span>{{ isAllPeriods ? 'Compras con crédito por periodo' : 'Compras con crédito por mes' }}</span>
             </div>
           </v-card-title>
           <v-card-text class="pa-5">
@@ -210,20 +223,164 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <v-dialog v-model="cardPaymentDialog" max-width="620" :persistent="savingCardPayment">
+      <v-card class="controlcash-panel controlcash-dialog-panel" elevation="0">
+        <v-card-title class="controlcash-card-title px-4 px-md-6 py-5">
+          Pagar tarjeta
+        </v-card-title>
+
+        <v-card-text class="pa-4 pa-md-6">
+          <div v-if="selectedPaymentCard" class="mb-4">
+            <div class="text-title-medium font-weight-bold">{{ selectedPaymentCard.name }}</div>
+            <div class="text-body-small text-medium-emphasis">{{ selectedPaymentCard.bank }}</div>
+          </div>
+
+          <v-form v-model="cardPaymentFormValid" @submit.prevent="registerCardPayment">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="paymentAccountId"
+                  class="controlcash-field"
+                  density="comfortable"
+                  :items="accountItems"
+                  item-title="title"
+                  item-value="value"
+                  label="Cuenta de cargo"
+                  prepend-inner-icon="mdi-wallet-outline"
+                  :return-object="false"
+                  :rules="[formRules.required]"
+                  variant="outlined"
+                >
+                  <template #no-data>
+                    <v-list-item>
+                      <v-list-item-title class="text-body-medium controlcash-select-no-data">
+                        No existen cuentas activas disponibles
+                      </v-list-item-title>
+                    </v-list-item>
+                  </template>
+                </v-select>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-date-input
+                  v-model="paymentDate"
+                  class="controlcash-field"
+                  clearable
+                  density="comfortable"
+                  label="Fecha de pago"
+                  prepend-icon=""
+                  prepend-inner-icon="mdi-calendar-month-outline"
+                  :rules="[formRules.required, formRules.date]"
+                  variant="outlined"
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-text-field
+                  v-model="paymentAvailableAmount"
+                  class="controlcash-field"
+                  density="comfortable"
+                  label="Disponible actual de la tarjeta"
+                  prefix="S/."
+                  prepend-inner-icon="mdi-credit-card-check-outline"
+                  :rules="availableAmountRules"
+                  type="number"
+                  variant="outlined"
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-alert color="primary" density="comfortable" variant="tonal">
+                  <div class="d-flex justify-space-between ga-4 mb-1">
+                    <span>Consumo registrado</span>
+                    <strong>{{ formatMoney(selectedPaymentCardDebt) }}</strong>
+                  </div>
+                  <div class="d-flex justify-space-between ga-4 mb-1">
+                    <span>Disponible registrado</span>
+                    <strong>{{ formatMoney(selectedPaymentCardRegisteredAvailable) }}</strong>
+                  </div>
+                  <div class="d-flex justify-space-between ga-4">
+                    <span>Pago a registrar</span>
+                    <strong>{{ formatMoney(calculatedCardPaymentAmount) }}</strong>
+                  </div>
+                </v-alert>
+              </v-col>
+
+              <v-col v-if="hasPaymentAvailableAmount && calculatedCardPaymentAmount <= 0" cols="12">
+                <v-alert color="warning" density="comfortable" variant="tonal">
+                  El disponible ingresado no genera un pago a registrar. Si el disponible real es menor al registrado,
+                  primero faltan consumos por cargar.
+                </v-alert>
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="px-4 px-md-6 pb-4 pb-md-6">
+          <v-spacer />
+          <v-btn :disabled="savingCardPayment" variant="text" @click="closeCardPaymentDialog()">
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!canRegisterCardPayment || savingCardPayment"
+            :loading="savingCardPayment"
+            variant="tonal"
+            @click="registerCardPayment"
+          >
+            Registrar pago
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import PeriodControls from '../../components/PeriodControls.vue'
+import { getPeriodKey, usePeriodFilter } from '../../composables/usePeriodFilter'
+import { useAccountsStore } from '../../stores/accounts'
 import { useCardsStore } from '../../stores/cards'
+import { useNotificationStore } from '../../stores/notifications'
 import { useTransactionsStore } from '../../stores/transactions'
+import { formRules } from '../../utils/formRules'
 
+const accountsStore = useAccountsStore()
 const cardsStore = useCardsStore()
+const notificationStore = useNotificationStore()
 const transactionsStore = useTransactionsStore()
-const today = new Date()
+const {
+  currentDate: today,
+  getTrendPeriods,
+  isAllPeriods,
+  matchesSelectedPeriod,
+  periodOptions,
+  resetSelectedPeriod,
+  selectedPeriod,
+  selectedPeriodScopeLabel,
+  showAllPeriods,
+} = usePeriodFilter()
+const cardPaymentDialog = ref(false)
+const cardPaymentFormValid = ref(false)
+const selectedPaymentCard = ref(null)
+const paymentAccountId = ref(null)
+const paymentAvailableAmount = ref('')
+const paymentDate = ref(new Date())
+const savingCardPayment = ref(false)
 
 const activeCards = computed(() => cardsStore.activeCards)
+const accountItems = computed(() =>
+  accountsStore.activeAccounts.map((account) => ({
+    title: account.name,
+    value: account.id,
+  })),
+)
+const periodTransactions = computed(() =>
+  transactionsStore.items.filter((transaction) => matchesSelectedPeriod(transaction.date)),
+)
 
 const cardRows = computed(() =>
   activeCards.value
@@ -271,7 +428,7 @@ const metrics = computed(() => [
     icon: 'mdi-credit-card-outline',
   },
   {
-    title: 'Deuda actual',
+    title: isAllPeriods.value ? 'Deuda actual' : 'Deuda del periodo',
     value: formatMoney(totalDebt.value),
     caption: `${totalUsageLabel.value} de uso total`,
     captionIcon: 'mdi-chart-donut',
@@ -281,15 +438,15 @@ const metrics = computed(() => [
   {
     title: 'Disponible',
     value: formatMoney(availableCredit.value),
-    caption: 'Línea no utilizada',
+    caption: isAllPeriods.value ? 'Línea no utilizada' : 'Luego del periodo',
     captionIcon: 'mdi-credit-card-check-outline',
     color: 'success',
     icon: 'mdi-wallet-plus-outline',
   },
   {
-    title: 'Mayor saldo',
+    title: isAllPeriods.value ? 'Mayor saldo' : 'Mayor uso',
     value: mostUsedCard.value ? mostUsedCard.value.name : '-',
-    caption: mostUsedCard.value ? formatMoney(mostUsedCard.value.debt) : 'Sin deuda registrada',
+    caption: mostUsedCard.value ? formatMoney(mostUsedCard.value.debt) : 'Sin uso registrado',
     captionIcon: 'mdi-alert-circle-outline',
     color: mostUsedCard.value?.usage >= 75 ? 'warning' : 'primary',
     icon: 'mdi-credit-card-search-outline',
@@ -297,24 +454,14 @@ const metrics = computed(() => [
 ])
 
 const trendMonths = computed(() => {
-  const months = []
-
-  for (let offset = 5; offset >= 0; offset -= 1) {
-    const date = new Date(today.getFullYear(), today.getMonth() - offset, 1)
-
-    months.push({
-      key: formatMonthKey(date),
-      label: date.toLocaleDateString('es-PE', { month: 'short' }).replace('.', ''),
-      total: 0,
-    })
-  }
+  const months = getTrendPeriods(transactionsStore.items)
 
   transactionsStore.items.forEach((transaction) => {
     if (!isCreditPurchase(transaction)) {
       return
     }
 
-    const month = months.find((item) => item.key === String(transaction.date || '').slice(0, 7))
+    const month = months.find((item) => item.key === getPeriodKey(transaction.date))
 
     if (month) {
       month.total += Number(transaction.amount || 0)
@@ -371,13 +518,56 @@ const upcomingPaymentRows = computed(() =>
     })
     .sort((first, second) => first.daysToPayment - second.daysToPayment),
 )
+const selectedPaymentCardLimit = computed(() => Number(selectedPaymentCard.value?.creditLimit || 0))
+const selectedPaymentCardDebt = computed(() =>
+  selectedPaymentCard.value
+    ? Math.max(getCardDebt(selectedPaymentCard.value.id, transactionsStore.items), 0)
+    : 0,
+)
+const selectedPaymentCardRegisteredAvailable = computed(() =>
+  Math.max(selectedPaymentCardLimit.value - selectedPaymentCardDebt.value, 0),
+)
+const hasPaymentAvailableAmount = computed(
+  () => paymentAvailableAmount.value !== null && paymentAvailableAmount.value !== '',
+)
+const normalizedPaymentAvailableAmount = computed(() =>
+  hasPaymentAvailableAmount.value ? Number(paymentAvailableAmount.value) : 0,
+)
+const paymentAvailableExceedsLimit = computed(
+  () => normalizedPaymentAvailableAmount.value > selectedPaymentCardLimit.value,
+)
+const targetCardDebt = computed(() =>
+  Math.max(selectedPaymentCardLimit.value - normalizedPaymentAvailableAmount.value, 0),
+)
+const calculatedCardPaymentAmount = computed(() =>
+  Math.max(selectedPaymentCardDebt.value - targetCardDebt.value, 0),
+)
+const availableAmountRules = computed(() => [
+  formRules.required,
+  formRules.zeroOrPositive,
+  (value) =>
+    Number(value) <= selectedPaymentCardLimit.value ||
+    `No puede superar la línea de crédito (${formatMoney(selectedPaymentCardLimit.value)}).`,
+])
+const canRegisterCardPayment = computed(
+  () =>
+    cardPaymentFormValid.value &&
+    Boolean(selectedPaymentCard.value) &&
+    Boolean(paymentAccountId.value) &&
+    Boolean(paymentDate.value) &&
+    hasPaymentAvailableAmount.value &&
+    !paymentAvailableExceedsLimit.value &&
+    calculatedCardPaymentAmount.value > 0,
+)
 
 onMounted(() => {
+  accountsStore.subscribeRealtime()
   cardsStore.subscribeRealtime()
   transactionsStore.subscribeRealtime()
 })
 
 onBeforeUnmount(() => {
+  accountsStore.stopRealtime()
   cardsStore.stopRealtime()
   transactionsStore.stopRealtime()
 })
@@ -386,8 +576,79 @@ function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
 
-function formatMonthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+function openCardPaymentDialog(card) {
+  selectedPaymentCard.value = card
+  paymentAccountId.value = null
+  paymentAvailableAmount.value = selectedPaymentCardRegisteredAvailable.value
+  paymentDate.value = new Date()
+  cardPaymentFormValid.value = false
+  cardPaymentDialog.value = true
+}
+
+function closeCardPaymentDialog(force = false) {
+  if (savingCardPayment.value && !force) {
+    return
+  }
+
+  cardPaymentDialog.value = false
+  selectedPaymentCard.value = null
+  paymentAccountId.value = null
+  paymentAvailableAmount.value = ''
+  paymentDate.value = new Date()
+  cardPaymentFormValid.value = false
+}
+
+async function registerCardPayment() {
+  if (!canRegisterCardPayment.value || savingCardPayment.value) {
+    if (hasPaymentAvailableAmount.value && calculatedCardPaymentAmount.value <= 0) {
+      notificationStore.show('El disponible ingresado no genera un pago a registrar.', 'warning')
+    }
+
+    return
+  }
+
+  savingCardPayment.value = true
+
+  try {
+    await transactionsStore.createItem({
+      type: 'card_payment',
+      amount: calculatedCardPaymentAmount.value,
+      date: formatDateValue(paymentDate.value),
+      description: `Pago ${selectedPaymentCard.value.name}`,
+      paymentMethod: null,
+      categoryId: null,
+      accountId: paymentAccountId.value,
+      destinationAccountId: null,
+      cardId: selectedPaymentCard.value.id,
+    })
+
+    notificationStore.success(`Pago registrado por ${formatMoney(calculatedCardPaymentAmount.value)}.`)
+    closeCardPaymentDialog(true)
+  } catch (error) {
+    notificationStore.error(transactionsStore.error || error?.message || 'No se pudo registrar el pago.')
+  } finally {
+    savingCardPayment.value = false
+  }
+}
+
+function formatDateValue(value) {
+  if (!value) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  return value
 }
 
 function isCreditPurchase(transaction) {
@@ -397,8 +658,8 @@ function isCreditPurchase(transaction) {
   )
 }
 
-function getCardDebt(cardId) {
-  return transactionsStore.items.reduce((debt, transaction) => {
+function getCardDebt(cardId, transactions = periodTransactions.value) {
+  return transactions.reduce((debt, transaction) => {
     const amount = Number(transaction.amount || 0)
 
     if (transaction.cardId !== cardId) {
@@ -501,7 +762,7 @@ function getDaysBetween(startDate, endDate) {
   align-items: center;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(120px, 180px) 1fr minmax(88px, 116px);
+  grid-template-columns: minmax(120px, 180px) 1fr minmax(132px, 156px);
 }
 
 .controlcash-bar-label,

@@ -1,7 +1,7 @@
 <template>
   <v-container class="controlcash-page-container controlcash-insight-page pa-4 pa-md-8" fluid>
     <v-row align="center" class="mb-4" dense>
-      <v-col cols="12" md="8">
+      <v-col cols="12" md="7">
         <div class="d-flex align-center ga-3">
           <v-avatar color="primary" rounded="lg" size="44">
             <v-icon icon="mdi-shape-plus-outline" size="26" />
@@ -9,15 +9,18 @@
           <div class="controlcash-title-block">
             <div class="text-headline-small font-weight-bold">Categorías</div>
             <div class="text-body-medium text-medium-emphasis">
-              Clasificación de ingresos y gastos del mes actual.
+              Clasificación de ingresos y gastos {{ selectedPeriodScopeLabel }}.
             </div>
           </div>
         </div>
       </v-col>
-      <v-col class="d-flex justify-md-end" cols="12" md="4">
-        <v-chip color="primary" prepend-icon="mdi-shape-outline" variant="tonal">
-          {{ activeCategories.length }} activas
-        </v-chip>
+      <v-col class="d-flex justify-md-end" cols="12" md="5">
+        <PeriodControls
+          v-model="selectedPeriod"
+          :items="periodOptions"
+          @reset="resetSelectedPeriod"
+          @show-all="showAllPeriods"
+        />
       </v-col>
     </v-row>
 
@@ -131,24 +134,34 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
+import PeriodControls from '../../components/PeriodControls.vue'
+import { usePeriodFilter } from '../../composables/usePeriodFilter'
 import { useCategoriesStore } from '../../stores/categories'
 import { useTransactionsStore } from '../../stores/transactions'
 
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
-const today = new Date()
+const {
+  isAllPeriods,
+  matchesSelectedPeriod,
+  periodOptions,
+  resetSelectedPeriod,
+  selectedPeriod,
+  selectedPeriodScopeLabel,
+  showAllPeriods,
+} = usePeriodFilter()
 const circumference = 515.22
 
 const activeCategories = computed(() => categoriesStore.activeCategories)
 const incomeCategories = computed(() => activeCategories.value.filter((category) => getCategoryType(category) === 'income'))
 const expenseCategories = computed(() => activeCategories.value.filter((category) => getCategoryType(category) === 'expense'))
-const monthlyTransactions = computed(() =>
-  transactionsStore.items.filter((transaction) => String(transaction.date || '').slice(0, 7) === formatMonthKey(today)),
+const periodTransactions = computed(() =>
+  transactionsStore.items.filter((transaction) => matchesSelectedPeriod(transaction.date)),
 )
 const expenseRows = computed(() => buildCategoryRows('expense'))
 const incomeRows = computed(() => buildCategoryRows('income'))
-const monthlyExpenseTotal = computed(() => expenseRows.value.reduce((total, row) => total + row.total, 0))
-const monthlyIncomeTotal = computed(() => incomeRows.value.reduce((total, row) => total + row.total, 0))
+const periodExpenseTotal = computed(() => expenseRows.value.reduce((total, row) => total + row.total, 0))
+const periodIncomeTotal = computed(() => incomeRows.value.reduce((total, row) => total + row.total, 0))
 const topExpense = computed(() => expenseRows.value[0])
 const topIncome = computed(() => incomeRows.value[0])
 const expenseCategoryShare = computed(() =>
@@ -169,16 +182,16 @@ const metrics = computed(() => [
     icon: 'mdi-shape-plus-outline',
   },
   {
-    title: 'Gasto mensual',
-    value: formatMoney(monthlyExpenseTotal.value),
+    title: isAllPeriods.value ? 'Gasto total' : 'Gasto mensual',
+    value: formatMoney(periodExpenseTotal.value),
     caption: topExpense.value ? `Mayor: ${topExpense.value.name}` : 'Sin gastos categorizados',
     captionIcon: 'mdi-arrow-up-circle-outline',
     color: 'error',
     icon: 'mdi-receipt-text-outline',
   },
   {
-    title: 'Ingreso mensual',
-    value: formatMoney(monthlyIncomeTotal.value),
+    title: isAllPeriods.value ? 'Ingreso total' : 'Ingreso mensual',
+    value: formatMoney(periodIncomeTotal.value),
     caption: topIncome.value ? `Mayor: ${topIncome.value.name}` : 'Sin ingresos categorizados',
     captionIcon: 'mdi-arrow-down-circle-outline',
     color: 'success',
@@ -187,14 +200,14 @@ const metrics = computed(() => [
   {
     title: 'Sin categoría',
     value: String(uncategorizedCount.value),
-    caption: 'Movimientos del mes',
+    caption: isAllPeriods.value ? 'Movimientos totales' : 'Movimientos del periodo',
     captionIcon: 'mdi-tag-off-outline',
     color: uncategorizedCount.value > 0 ? 'warning' : 'success',
     icon: 'mdi-tag-outline',
   },
 ])
 const uncategorizedCount = computed(() =>
-  monthlyTransactions.value.filter(
+  periodTransactions.value.filter(
     (transaction) => ['income', 'expense'].includes(transaction.type) && !transaction.categoryId,
   ).length,
 )
@@ -213,16 +226,12 @@ function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
 
-function formatMonthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
 function getCategoryType(category) {
   return category.type || 'expense'
 }
 
 function buildCategoryRows(type) {
-  const totals = monthlyTransactions.value.reduce((result, transaction) => {
+  const totals = periodTransactions.value.reduce((result, transaction) => {
     if (transaction.type !== type || !transaction.categoryId) return result
     result[transaction.categoryId] = (result[transaction.categoryId] || 0) + Number(transaction.amount || 0)
     return result

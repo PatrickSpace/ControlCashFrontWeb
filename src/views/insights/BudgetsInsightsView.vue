@@ -1,7 +1,7 @@
 <template>
   <v-container class="controlcash-page-container controlcash-insight-page pa-4 pa-md-8" fluid>
     <v-row align="center" class="mb-4" dense>
-      <v-col cols="12" md="8">
+      <v-col cols="12" md="7">
         <div class="d-flex align-center ga-3">
           <v-avatar color="primary" rounded="lg" size="44">
             <v-icon icon="mdi-chart-donut" size="26" />
@@ -9,15 +9,18 @@
           <div class="controlcash-title-block">
             <div class="text-headline-small font-weight-bold">Presupuestos</div>
             <div class="text-body-medium text-medium-emphasis">
-              Uso mensual, riesgo de exceso y margen disponible.
+              Uso, riesgo de exceso y margen disponible {{ selectedPeriodScopeLabel }}.
             </div>
           </div>
         </div>
       </v-col>
-      <v-col class="d-flex justify-md-end" cols="12" md="4">
-        <v-chip color="primary" prepend-icon="mdi-calendar-month-outline" variant="tonal">
-          Mes actual
-        </v-chip>
+      <v-col class="d-flex justify-md-end" cols="12" md="5">
+        <PeriodControls
+          v-model="selectedPeriod"
+          :items="periodOptions"
+          @reset="resetSelectedPeriod"
+          @show-all="showAllPeriods"
+        />
       </v-col>
     </v-row>
 
@@ -87,7 +90,7 @@
                 </div>
                 <div class="controlcash-bar-amount">
                   <strong>{{ Math.round(budget.percent) }}%</strong>
-                  <span>{{ formatMoney(budget.spent) }}</span>
+                  <span>{{ formatMoney(budget.spent) }} de {{ formatMoney(budget.limit) }}</span>
                 </div>
               </div>
             </div>
@@ -143,6 +146,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
+import PeriodControls from '../../components/PeriodControls.vue'
+import { getPeriodKey, usePeriodFilter } from '../../composables/usePeriodFilter'
 import { useBudgetsStore } from '../../stores/budgets'
 import { useCategoriesStore } from '../../stores/categories'
 import { useTransactionsStore } from '../../stores/transactions'
@@ -150,16 +155,34 @@ import { useTransactionsStore } from '../../stores/transactions'
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
-const today = new Date()
+const {
+  isAllPeriods,
+  matchesSelectedPeriod,
+  periodOptions,
+  resetSelectedPeriod,
+  selectedPeriod,
+  selectedPeriodScopeLabel,
+  showAllPeriods,
+} = usePeriodFilter()
 const circumference = 515.22
 
-const monthlyTransactions = computed(() =>
-  transactionsStore.items.filter((transaction) => String(transaction.date || '').slice(0, 7) === formatMonthKey(today)),
+const periodTransactions = computed(() =>
+  transactionsStore.items.filter((transaction) => matchesSelectedPeriod(transaction.date)),
+)
+const periodBudgetMultiplier = computed(() => {
+  if (!isAllPeriods.value) {
+    return 1
+  }
+
+  return Math.max(new Set(periodTransactions.value.map((transaction) => getPeriodKey(transaction.date)).filter(Boolean)).size, 1)
+})
+const budgetPeriodLabel = computed(() =>
+  periodBudgetMultiplier.value === 1 ? '1 periodo' : `${periodBudgetMultiplier.value} periodos`,
 )
 const budgetRows = computed(() =>
   budgetsStore.activeBudgets
     .map((budget) => {
-      const limit = Number(budget.limitAmount || 0)
+      const limit = Number(budget.limitAmount || 0) * periodBudgetMultiplier.value
       const spent = getCategoryExpense(budget.categoryId)
       const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0
       const remaining = limit - spent
@@ -193,7 +216,7 @@ const metrics = computed(() => [
   {
     title: 'Presupuesto total',
     value: formatMoney(totalLimit.value),
-    caption: `${budgetRows.value.length} activos`,
+    caption: `${budgetRows.value.length} activos · ${budgetPeriodLabel.value}`,
     captionIcon: 'mdi-chart-donut',
     color: 'primary',
     icon: 'mdi-wallet-bifold-outline',
@@ -240,16 +263,12 @@ function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
 
-function formatMonthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
 function getCategoryName(categoryId) {
   return categoriesStore.items.find((category) => category.id === categoryId)?.name || 'Sin categoría'
 }
 
 function getCategoryExpense(categoryId) {
-  return monthlyTransactions.value.reduce((total, transaction) => {
+  return periodTransactions.value.reduce((total, transaction) => {
     if (transaction.categoryId !== categoryId) return total
     if (transaction.type === 'expense' || transaction.type === 'card_purchase') {
       return total + Number(transaction.amount || 0)

@@ -1,7 +1,7 @@
 <template>
   <v-container class="controlcash-page-container controlcash-insight-page pa-4 pa-md-8" fluid>
     <v-row align="center" class="mb-4" dense>
-      <v-col cols="12" md="8">
+      <v-col cols="12" md="7">
         <div class="d-flex align-center ga-3">
           <v-avatar color="primary" rounded="lg" size="44">
             <v-icon icon="mdi-wallet-outline" size="26" />
@@ -9,15 +9,18 @@
           <div class="controlcash-title-block">
             <div class="text-headline-small font-weight-bold">Cuentas</div>
             <div class="text-body-medium text-medium-emphasis">
-              Saldos, composición y movimiento neto de tus cuentas.
+              Saldos, composición y movimiento neto {{ selectedPeriodScopeLabel }}.
             </div>
           </div>
         </div>
       </v-col>
-      <v-col class="d-flex justify-md-end" cols="12" md="4">
-        <v-chip color="primary" prepend-icon="mdi-wallet-outline" variant="tonal">
-          {{ activeAccounts.length }} activas
-        </v-chip>
+      <v-col class="d-flex justify-md-end" cols="12" md="5">
+        <PeriodControls
+          v-model="selectedPeriod"
+          :items="periodOptions"
+          @reset="resetSelectedPeriod"
+          @show-all="showAllPeriods"
+        />
       </v-col>
     </v-row>
 
@@ -118,7 +121,7 @@
           <v-card-title class="controlcash-card-title px-5 py-4">
             <div class="d-flex align-center ga-3">
               <v-icon color="primary" icon="mdi-chart-line" />
-              <span>Movimiento neto mensual</span>
+              <span>{{ isAllPeriods ? 'Movimiento neto por periodo' : 'Movimiento neto mensual' }}</span>
             </div>
           </v-card-title>
           <v-card-text class="pa-5">
@@ -144,12 +147,23 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
+import PeriodControls from '../../components/PeriodControls.vue'
+import { getPeriodKey, usePeriodFilter } from '../../composables/usePeriodFilter'
 import { useAccountsStore } from '../../stores/accounts'
 import { useTransactionsStore } from '../../stores/transactions'
 
 const accountsStore = useAccountsStore()
 const transactionsStore = useTransactionsStore()
-const today = new Date()
+const {
+  getTrendPeriods,
+  isAllPeriods,
+  matchesSelectedPeriod,
+  periodOptions,
+  resetSelectedPeriod,
+  selectedPeriod,
+  selectedPeriodScopeLabel,
+  showAllPeriods,
+} = usePeriodFilter()
 const circumference = 515.22
 
 const accountTypeLabels = {
@@ -161,6 +175,9 @@ const accountTypeLabels = {
 }
 
 const activeAccounts = computed(() => accountsStore.activeAccounts)
+const periodTransactions = computed(() =>
+  transactionsStore.items.filter((transaction) => matchesSelectedPeriod(transaction.date)),
+)
 const accountRows = computed(() => {
   const rows = accountsStore.items.map((account) => ({
     ...account,
@@ -183,6 +200,16 @@ const totalNegativeBalance = computed(() =>
   accountRows.value.reduce((total, account) => total + Math.abs(Math.min(account.balance, 0)), 0),
 )
 const netBalance = computed(() => totalPositiveBalance.value - totalNegativeBalance.value)
+const cashAccountsBalance = computed(() =>
+  accountRows.value
+    .filter((account) => getAccountClassification(account) === 'cash')
+    .reduce((total, account) => total + Number(account.balance || 0), 0),
+)
+const nonLiquidAssetsBalance = computed(() =>
+  accountRows.value
+    .filter((account) => getAccountClassification(account) === 'non_liquid_asset')
+    .reduce((total, account) => total + Number(account.balance || 0), 0),
+)
 const bestAccount = computed(() => accountRows.value[0])
 const savingsAndInvestmentsTotal = computed(() =>
   accountRows.value
@@ -220,20 +247,20 @@ const metrics = computed(() => [
     icon: 'mdi-wallet-outline',
   },
   {
-    title: 'Saldos positivos',
-    value: formatMoney(totalPositiveBalance.value),
-    caption: 'Disponible en cuentas',
-    captionIcon: 'mdi-arrow-up-circle-outline',
+    title: 'Cuentas de efectivo',
+    value: formatMoney(cashAccountsBalance.value),
+    caption: 'Saldo líquido disponible',
+    captionIcon: 'mdi-cash-multiple',
     color: 'success',
-    icon: 'mdi-bank-outline',
+    icon: 'mdi-cash',
   },
   {
-    title: 'Saldos negativos',
-    value: formatMoney(totalNegativeBalance.value),
-    caption: 'Cuentas bajo cero',
-    captionIcon: 'mdi-arrow-down-circle-outline',
-    color: totalNegativeBalance.value > 0 ? 'warning' : 'success',
-    icon: 'mdi-alert-circle-outline',
+    title: 'Activos',
+    value: formatMoney(nonLiquidAssetsBalance.value),
+    caption: 'Activos no líquidos',
+    captionIcon: 'mdi-chart-line',
+    color: 'primary',
+    icon: 'mdi-safe-square-outline',
   },
   {
     title: 'Cuenta principal',
@@ -245,13 +272,10 @@ const metrics = computed(() => [
   },
 ])
 const trendMonths = computed(() => {
-  const months = []
-  for (let offset = 5; offset >= 0; offset -= 1) {
-    const date = new Date(today.getFullYear(), today.getMonth() - offset, 1)
-    months.push({ key: formatMonthKey(date), label: getShortMonthLabel(date), total: 0 })
-  }
+  const months = getTrendPeriods(transactionsStore.items)
+
   transactionsStore.items.forEach((transaction) => {
-    const month = months.find((item) => item.key === String(transaction.date || '').slice(0, 7))
+    const month = months.find((item) => item.key === getPeriodKey(transaction.date))
     if (!month) return
     const amount = Number(transaction.amount || 0)
     if (transaction.type === 'income') month.total += amount
@@ -283,14 +307,6 @@ function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
 }
 
-function formatMonthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function getShortMonthLabel(date) {
-  return date.toLocaleDateString('es-PE', { month: 'short' }).replace('.', '')
-}
-
 function getTrendPoints(months) {
   const maxAbs = Math.max(...months.map((month) => Math.abs(month.total)), 1)
   const step = 592 / Math.max(months.length - 1, 1)
@@ -301,8 +317,12 @@ function getTrendPoints(months) {
   }))
 }
 
+function getAccountClassification(account) {
+  return account.classification || (account.type === 'investments' ? 'non_liquid_asset' : 'cash')
+}
+
 function getAccountBalance(accountId) {
-  return transactionsStore.items.reduce((balance, transaction) => {
+  return periodTransactions.value.reduce((balance, transaction) => {
     const amount = Number(transaction.amount || 0)
     if (transaction.type === 'income' && transaction.accountId === accountId) return balance + amount
     if (transaction.type === 'expense' && transaction.accountId === accountId) return balance - amount

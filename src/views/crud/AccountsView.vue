@@ -8,8 +8,9 @@
     icon="mdi-wallet-outline"
     singular-title="cuenta"
     :store="accountsStore"
-    subtitle="Cuentas de efectivo, bancos, ahorros, crédito e inversiones. El balance se calculará desde transactions."
+    subtitle="Clasifica tus cuentas como efectivo/líquidas o activos no líquidos. El balance se calculará desde transactions."
     title="Cuentas"
+    :totals="totals"
   />
 </template>
 
@@ -29,6 +30,7 @@ const transactionsStore = useTransactionsStore()
 const headers = [
   { title: 'Nombre', key: 'name' },
   { title: 'Tipo', key: 'typeLabel' },
+  { title: 'Clasificación', key: 'classificationLabel' },
   { title: 'Tarjeta', key: 'cardLabel' },
   { title: 'Saldo', key: 'balanceLabel' },
   { title: 'Estado', key: 'isActive' },
@@ -73,6 +75,18 @@ const fields = computed(() => [
     md: 6,
   },
   {
+    key: 'classification',
+    label: 'Clasificación',
+    type: 'select',
+    defaultValue: 'cash',
+    items: [
+      { title: 'Cuenta de efectivo / líquida', value: 'cash' },
+      { title: 'Activo no líquido', value: 'non_liquid_asset' },
+    ],
+    rules: [formRules.required],
+    md: 6,
+  },
+  {
     key: 'isActive',
     label: 'Estado',
     type: 'boolean',
@@ -88,6 +102,15 @@ const accountTypeLabels = {
   credit: 'Crédito',
   investments: 'Inversiones',
 }
+
+const accountClassificationLabels = {
+  cash: 'Efectivo / líquida',
+  non_liquid_asset: 'Activo no líquido',
+}
+
+const totals = computed(() => ({
+  balanceLabel: formatMoney(accountsStore.items.reduce((total, account) => total + getAccountBalance(account), 0)),
+}))
 
 onMounted(() => {
   cardsStore.subscribeRealtime()
@@ -137,8 +160,19 @@ function formatRow(account) {
   return {
     ...account,
     typeLabel: accountTypeLabels[account.type] || account.type,
+    classificationLabel: getAccountClassificationLabel(account),
     cardLabel: cardsStore.items.find((card) => card.id === account.cardId)?.name || '-',
     balanceLabel: formatMoney(getAccountBalance(account)),
   }
+}
+
+function getAccountClassificationLabel(account) {
+  const classification = account.classification || getDefaultAccountClassification(account.type)
+
+  return accountClassificationLabels[classification] || '-'
+}
+
+function getDefaultAccountClassification(type) {
+  return type === 'investments' ? 'non_liquid_asset' : 'cash'
 }
 </script>

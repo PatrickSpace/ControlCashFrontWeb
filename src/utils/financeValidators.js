@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_CLASSIFICATIONS,
   ACCOUNT_TYPES,
   BUDGET_PERIODS,
   CATEGORY_TYPES,
@@ -154,6 +155,15 @@ export function validateAccount(payload, options = {}) {
     account.type = normalizeEnum(payload.type, 'Tipo de cuenta', ACCOUNT_TYPES, { required: true })
   }
 
+  if (shouldValidate(payload, 'classification', partial) || !partial) {
+    account.classification = normalizeEnum(
+      payload.classification || getDefaultAccountClassification(payload.type),
+      'Clasificacion',
+      ACCOUNT_CLASSIFICATIONS,
+      { required: true },
+    )
+  }
+
   if (shouldValidate(payload, 'cardId', partial)) {
     assignIfPresent(account, 'cardId', normalizeString(payload.cardId, 'Tarjeta'))
   }
@@ -169,6 +179,10 @@ export function validateAccount(payload, options = {}) {
   }
 
   return account
+}
+
+function getDefaultAccountClassification(type) {
+  return type === 'investments' ? 'non_liquid_asset' : 'cash'
 }
 
 export function validateCard(payload, options = {}) {

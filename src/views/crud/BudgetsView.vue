@@ -11,6 +11,7 @@
     :store="budgetsStore"
     subtitle="Los presupuestos se comparan con los gastos del mes actual."
     title="Presupuestos"
+    :totals="totals"
   />
 </template>
 
@@ -24,6 +25,12 @@ import { formRules } from '../../utils/formRules'
 
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
+
+const totals = computed(() => ({
+  limitAmountLabel: formatMoney(
+    budgetsStore.items.reduce((total, budget) => total + Number(budget.limitAmount || 0), 0),
+  ),
+}))
 
 const headers = [
   { title: 'Nombre', key: 'name' },

@@ -1,7 +1,7 @@
 <template>
   <v-container class="controlcash-page-container controlcash-dashboard pa-4 pa-md-8" fluid>
     <v-row align="center" class="mb-4" dense>
-      <v-col cols="12" md="8">
+      <v-col cols="12">
         <div class="d-flex align-center ga-3">
           <v-avatar color="primary" rounded="lg" size="44">
             <v-icon icon="mdi-view-dashboard-outline" size="26" />
@@ -12,32 +12,6 @@
               Resumen financiero de {{ currentMonthLabel }}
             </div>
           </div>
-        </div>
-      </v-col>
-
-      <v-col class="d-flex justify-md-end" cols="12" md="4">
-        <div class="controlcash-period-actions">
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-calendar-sync-outline"
-            variant="tonal"
-            @click="resetSelectedPeriod"
-          >
-            Periodo actual
-          </v-btn>
-          <v-combobox
-            v-model="selectedPeriod"
-            class="controlcash-field controlcash-period-combobox"
-            density="comfortable"
-            hide-details
-            :items="periodOptions"
-            item-title="title"
-            item-value="value"
-            label="Periodo"
-            prepend-inner-icon="mdi-calendar-month-outline"
-            :return-object="false"
-            variant="outlined"
-          />
         </div>
       </v-col>
     </v-row>
@@ -563,7 +537,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 
 import { useAccountsStore } from '../stores/accounts'
 import { useBudgetsStore } from '../stores/budgets'
@@ -577,7 +551,6 @@ const cardsStore = useCardsStore()
 const categoriesStore = useCategoriesStore()
 const transactionsStore = useTransactionsStore()
 const currentDate = new Date()
-const selectedPeriod = ref(formatPeriodValue(currentDate))
 const healthyUtilizationTarget = 80
 const flexibleUtilizationTarget = 70
 
@@ -597,45 +570,18 @@ const accountTypeIcons = {
   investments: 'mdi-chart-line',
 }
 
-const periodOptions = computed(() => {
-  const options = []
-
-  for (let offset = -12; offset <= 6; offset += 1) {
-    const periodDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1)
-
-    options.push({
-      title: formatPeriodLabel(periodDate),
-      value: formatPeriodValue(periodDate),
-    })
-  }
-
-  return options.reverse()
-})
-
-const selectedPeriodParts = computed(() => {
-  const [year, month] = String(selectedPeriod.value || formatPeriodValue(currentDate))
-    .split('-')
-    .map(Number)
-
-  return {
-    month: Number.isInteger(month) ? month - 1 : currentDate.getMonth(),
-    year: Number.isInteger(year) ? year : currentDate.getFullYear(),
-  }
-})
-
-const currentMonthLabel = computed(() =>
-  formatPeriodDate(selectedPeriod.value).toLocaleDateString('es-PE', {
-    month: 'long',
-    year: 'numeric',
-  }),
-)
+const currentMonthLabel = 'todos los periodos'
 
 const monthlyTransactions = computed(() =>
-  transactionsStore.items.filter((transaction) => isSelectedPeriod(transaction.date)),
+  transactionsStore.items,
 )
 
 const monthlyIncome = computed(() =>
-  sumTransactions(monthlyTransactions.value.filter((transaction) => transaction.type === 'income')),
+  sumTransactions(
+    monthlyTransactions.value.filter(
+      (transaction) => transaction.type === 'income' && isCashAccount(transaction.accountId),
+    ),
+  ),
 )
 
 const monthlyExpenses = computed(() =>
@@ -886,7 +832,7 @@ const mainMetrics = computed(() => [
     trendIcon: totalLiabilities.value > 0 ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline',
   },
   {
-    title: 'Balance mensual',
+    title: 'Balance total',
     value: formatMoney(monthlyBalance.value),
     caption: `${formatMoney(monthlyIncome.value)} ingresos vs ${formatMoney(monthlyExpenses.value)} gastos`,
     color: monthlyBalance.value >= 0 ? 'success' : 'error',
@@ -914,19 +860,6 @@ onBeforeUnmount(() => {
 
 function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`
-}
-
-function resetSelectedPeriod() {
-  selectedPeriod.value = formatPeriodValue(currentDate)
-}
-
-function getTransactionDate(date) {
-  if (!date) {
-    return null
-  }
-
-  const transactionDate = new Date(`${date}T00:00:00`)
-  return Number.isNaN(transactionDate.getTime()) ? null : transactionDate
 }
 
 function getDaysToCardDay(dayOfMonth) {
@@ -961,45 +894,22 @@ function getCardRecommendationReason(card) {
   return 'Es la mejor opción disponible por balance entre límite, uso actual y fechas.'
 }
 
-function formatPeriodValue(date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-
-  return `${date.getFullYear()}-${month}`
-}
-
-function formatPeriodDate(periodValue) {
-  const [year, month] = String(periodValue || formatPeriodValue(currentDate)).split('-').map(Number)
-
-  if (!Number.isInteger(year) || !Number.isInteger(month)) {
-    return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-  }
-
-  return new Date(year, month - 1, 1)
-}
-
-function formatPeriodLabel(date) {
-  return date.toLocaleDateString('es-PE', {
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-function isSelectedPeriod(date) {
-  const transactionDate = getTransactionDate(date)
-
-  return (
-    transactionDate &&
-    transactionDate.getMonth() === selectedPeriodParts.value.month &&
-    transactionDate.getFullYear() === selectedPeriodParts.value.year
-  )
-}
-
 function isExpenseTransaction(transaction) {
   return transaction.type === 'expense' || transaction.type === 'card_purchase'
 }
 
 function sumTransactions(transactions) {
   return transactions.reduce((total, transaction) => total + Number(transaction.amount || 0), 0)
+}
+
+function isCashAccount(accountId) {
+  const account = accountsStore.items.find((item) => item.id === accountId)
+
+  return account ? getAccountClassification(account) === 'cash' : false
+}
+
+function getAccountClassification(account) {
+  return account.classification || (account.type === 'investments' ? 'non_liquid_asset' : 'cash')
 }
 
 function getAccountBalance(accountId) {
@@ -1083,19 +993,6 @@ function getCategoryMonthlyExpense(categoryId) {
   min-height: 100%;
 }
 
-.controlcash-period-actions {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.controlcash-period-combobox {
-  flex: 0 1 220px;
-  min-width: 190px;
-}
-
 .controlcash-networth,
 .controlcash-category-summary {
   background: var(--cc-list-item);
@@ -1174,18 +1071,6 @@ function getCategoryMonthlyExpense(categoryId) {
   .controlcash-spend-advice-card .text-display-small {
     font-size: 1.85rem;
     line-height: 1.15;
-  }
-
-  .controlcash-period-actions {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .controlcash-period-combobox {
-    flex-basis: auto;
-    min-width: 0;
-    width: 100%;
   }
 
   .controlcash-card-amount {

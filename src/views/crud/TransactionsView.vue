@@ -15,7 +15,7 @@
   >
     <template #filters>
       <v-row align="center" dense>
-        <v-col cols="12" md="5" lg="4">
+        <v-col cols="12" md="6" lg="3">
           <v-select
             v-model="selectedAccountId"
             class="controlcash-field"
@@ -38,7 +38,7 @@
           </v-select>
         </v-col>
 
-        <v-col cols="12" md="5" lg="4">
+        <v-col cols="12" md="6" lg="3">
           <v-select
             v-model="selectedExpenseType"
             class="controlcash-field"
@@ -53,7 +53,7 @@
           />
         </v-col>
 
-        <v-col cols="12" md="5" lg="4">
+        <v-col cols="12" md="6" lg="3">
           <v-select
             v-model="selectedCardId"
             class="controlcash-field"
@@ -76,7 +76,43 @@
           </v-select>
         </v-col>
 
-        <v-col cols="12" md="2" lg="4">
+        <v-col cols="12" md="6" lg="3">
+          <v-select
+            v-model="selectedCategoryId"
+            class="controlcash-field"
+            clearable
+            density="comfortable"
+            hide-details
+            :items="categoryFilterItems"
+            item-title="title"
+            item-value="value"
+            label="Filtrar por categoría"
+            prepend-inner-icon="mdi-shape-outline"
+          >
+            <template #no-data>
+              <v-list-item>
+                <v-list-item-title class="text-body-medium controlcash-select-no-data">
+                  No existen categorías disponibles
+                </v-list-item-title>
+              </v-list-item>
+            </template>
+          </v-select>
+        </v-col>
+
+        <v-col cols="12" md="6" lg="3">
+          <v-text-field
+            v-model="descriptionSearch"
+            class="controlcash-field"
+            clearable
+            density="comfortable"
+            hide-details
+            label="Buscar descripción"
+            prepend-inner-icon="mdi-text-search"
+            variant="outlined"
+          />
+        </v-col>
+
+        <v-col cols="12" md="6" lg="3">
           <v-btn
             block
             color="primary"
@@ -88,7 +124,7 @@
           </v-btn>
         </v-col>
 
-        <v-col cols="12" md="3" lg="4">
+        <v-col cols="12" md="6" lg="3">
           <v-btn
             block
             color="error"
@@ -316,6 +352,8 @@ const transactionsStore = useTransactionsStore()
 const selectedAccountId = ref(null)
 const selectedExpenseType = ref(null)
 const selectedCardId = ref(null)
+const selectedCategoryId = ref(null)
+const descriptionSearch = ref('')
 const importDialog = ref(false)
 const importFormValid = ref(false)
 const importMode = ref('transactions')
@@ -334,6 +372,7 @@ const headers = [
   { title: 'Fecha', key: 'date' },
   { title: 'Tipo', key: 'typeLabel' },
   { title: 'Descripción', key: 'description' },
+  { title: 'Categoría', key: 'categoryLabel' },
   { title: 'Monto', key: 'amountLabel' },
   { title: 'Cuenta', key: 'accountLabel' },
   { title: 'Tarjeta', key: 'cardLabel' },
@@ -357,6 +396,13 @@ const cardItems = computed(() =>
   cardsStore.activeCards.map((card) => ({
     title: `${card.name} - ${card.bank}`,
     value: card.id,
+  })),
+)
+
+const categoryFilterItems = computed(() =>
+  categoriesStore.items.map((category) => ({
+    title: `${category.name} - ${getCategoryTypeLabel(category)}`,
+    value: category.id,
   })),
 )
 
@@ -478,12 +524,15 @@ const transactionTypeLabels = {
 }
 
 const emptyTransactionsText = computed(() =>
-  selectedAccountId.value || selectedExpenseType.value || selectedCardId.value
+  selectedAccountId.value || selectedExpenseType.value || selectedCardId.value || selectedCategoryId.value
+    || descriptionSearch.value
     ? 'No hay transacciones para los filtros seleccionados.'
     : 'Registra tu primer movimiento financiero.',
 )
 
 const filteredTransactions = computed(() => {
+  const normalizedDescriptionSearch = normalizeLookupText(descriptionSearch.value)
+
   return transactionsStore.transactionsByDate.filter((transaction) => {
     const matchesAccount =
       !selectedAccountId.value ||
@@ -493,8 +542,12 @@ const filteredTransactions = computed(() => {
       !selectedExpenseType.value ||
       (transaction.type === 'expense' && transaction.paymentMethod === selectedExpenseType.value)
     const matchesCard = !selectedCardId.value || transaction.cardId === selectedCardId.value
+    const matchesCategory = !selectedCategoryId.value || transaction.categoryId === selectedCategoryId.value
+    const matchesDescription =
+      !normalizedDescriptionSearch ||
+      normalizeLookupText(transaction.description).includes(normalizedDescriptionSearch)
 
-    return matchesAccount && matchesExpenseType && matchesCard
+    return matchesAccount && matchesExpenseType && matchesCard && matchesCategory && matchesDescription
   })
 })
 
@@ -558,6 +611,10 @@ function getCategoryType(category) {
   return category.type || 'expense'
 }
 
+function getCategoryTypeLabel(category) {
+  return getCategoryType(category) === 'income' ? 'Ingreso' : 'Gasto'
+}
+
 function getCategoryItems(transactionType) {
   if (!['income', 'expense'].includes(transactionType)) {
     return []
@@ -590,6 +647,7 @@ function formatRow(transaction) {
     ...transaction,
     typeLabel: transactionTypeLabels[transaction.type] || transaction.type,
     amountLabel: formatMoney(transaction.amount),
+    categoryLabel: findName(categoriesStore.items, transaction.categoryId),
     accountLabel: findName(accountsStore.items, transaction.accountId),
     cardLabel: findName(cardsStore.items, transaction.cardId),
   }

@@ -10,10 +10,13 @@
     :store="cardsStore"
     subtitle="Tarjetas de crédito. Crédito usado y disponible se calcularán desde transactions."
     title="Tarjetas"
+    :totals="totals"
   />
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 import CrudPage from '../../components/crud/CrudPage.vue'
 import { useCardsStore } from '../../stores/cards'
 import { formRules } from '../../utils/formRules'
@@ -63,6 +66,12 @@ const fields = [
     md: 4,
   },
 ]
+
+const totals = computed(() => ({
+  creditLimitLabel: formatMoney(
+    cardsStore.items.reduce((total, card) => total + Number(card.creditLimit || 0), 0),
+  ),
+}))
 
 function formatMoney(value) {
   return `S/. ${Number(value || 0).toFixed(2)}`

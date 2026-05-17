@@ -148,6 +148,18 @@
             </div>
           </template>
 
+          <template v-if="hasTotals" #body.append>
+            <tr class="controlcash-total-row">
+              <td
+                v-for="(header, index) in tableHeaders"
+                :key="header.key"
+                :class="{ 'text-right': header.align === 'end' }"
+              >
+                {{ getTotalCellValue(header, index) }}
+              </td>
+            </tr>
+          </template>
+
           <template #no-data>
             <div class="pa-8 text-center text-medium-emphasis">
               <v-icon class="mb-2" :icon="emptyIcon" size="40" />
@@ -339,6 +351,14 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  totals: {
+    type: Object,
+    default: null,
+  },
+  totalsLabel: {
+    type: String,
+    default: 'Total',
+  },
   openCreateSignal: {
     type: [Number, String],
     default: '',
@@ -375,6 +395,7 @@ const rows = computed(() => {
 
   return sourceItems.map((item) => props.formatRow(item))
 })
+const hasTotals = computed(() => rows.value.length > 0 && props.totals && Object.keys(props.totals).length > 0)
 const deleteItemLabel = computed(() => deletingItem.value?.name || deletingItem.value?.description || 'este registro')
 
 function getRawItem(item) {
@@ -420,6 +441,18 @@ function getMobileDetailFields(item) {
       title: field.title,
       value: formatMobileValue(item, field.key),
     }))
+}
+
+function getTotalCellValue(header, index) {
+  if (header.key === 'actions') {
+    return ''
+  }
+
+  if (props.totals && Object.prototype.hasOwnProperty.call(props.totals, header.key)) {
+    return props.totals[header.key]
+  }
+
+  return index === 0 ? props.totalsLabel : ''
 }
 
 function shouldShowField(field) {
@@ -584,6 +617,12 @@ function formatDateValue(value) {
 
 .controlcash-table :deep(tbody tr:nth-child(5)) {
   animation-delay: 112ms;
+}
+
+.controlcash-table :deep(.controlcash-total-row td) {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-top: 1px solid rgba(var(--v-theme-primary), 0.22);
+  font-weight: 700;
 }
 
 .controlcash-mobile-list {

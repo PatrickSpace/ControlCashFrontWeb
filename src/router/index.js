@@ -8,6 +8,7 @@ import CategoriesView from '../views/crud/CategoriesView.vue'
 import TransactionsView from '../views/crud/TransactionsView.vue'
 import ActionsView from '../views/ActionsView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import FunctionsTestView from '../views/FunctionsTestView.vue'
 import AccountsInsightsView from '../views/insights/AccountsInsightsView.vue'
 import BudgetsInsightsView from '../views/insights/BudgetsInsightsView.vue'
 import CategoriesInsightsView from '../views/insights/CategoriesInsightsView.vue'
@@ -73,6 +74,14 @@ const routes = [
     path: '/actions',
     name: 'actions',
     component: ActionsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/functions-test',
+    name: 'functions-test',
+    component: FunctionsTestView,
     meta: {
       requiresAuth: true,
     },

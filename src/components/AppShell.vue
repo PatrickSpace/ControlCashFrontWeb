@@ -199,6 +199,11 @@ const primaryNavigationItems = [
     icon: "mdi-lightning-bolt-outline",
     to: "/actions",
   },
+  {
+    title: "Prueba Functions",
+    icon: "mdi-cloud-check-outline",
+    to: "/functions-test",
+  },
 ];
 
 const configurationNavigationItems = [

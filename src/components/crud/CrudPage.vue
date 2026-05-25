@@ -239,6 +239,18 @@
                   />
 
                   <v-text-field
+                    v-else-if="isComputedField(field)"
+                    class="controlcash-field"
+                    :hint="field.hint"
+                    :label="getFieldLabel(field)"
+                    :model-value="getComputedFieldValue(field)"
+                    persistent-hint
+                    :prefix="field.prefix"
+                    readonly
+                    :type="field.type || 'text'"
+                  />
+
+                  <v-text-field
                     v-else
                     v-model="form[field.key]"
                     class="controlcash-field"
@@ -471,6 +483,14 @@ function getFieldRules(field) {
   return typeof field.rules === 'function' ? field.rules(form, editingItem.value) : field.rules || []
 }
 
+function isComputedField(field) {
+  return typeof field.computedValue === 'function'
+}
+
+function getComputedFieldValue(field) {
+  return field.computedValue(form, editingItem.value)
+}
+
 onMounted(() => {
   props.store.subscribeRealtime()
 })
@@ -534,7 +554,9 @@ async function save() {
   saving.value = true
 
   const rawPayload = props.fields.reduce((nextPayload, field) => {
-    nextPayload[field.key] = getPayloadValue(field, form[field.key])
+    const value = isComputedField(field) ? getComputedFieldValue(field) : form[field.key]
+
+    nextPayload[field.key] = getPayloadValue(field, value)
     return nextPayload
   }, {})
   const payload = props.preparePayload(rawPayload)

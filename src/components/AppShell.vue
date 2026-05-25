@@ -172,6 +172,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useDisplay } from "vuetify";
 
 import ThemeToggle from "./ThemeToggle.vue";
+import { importGmailCreditCardTransactions } from "../services/gmailImportService";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notifications";
 
@@ -182,6 +183,7 @@ const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const drawer = ref(!mobile.value);
 const openedNavigationGroups = ref([]);
+const gmailImportStarted = ref(false);
 
 const primaryNavigationItems = [
   {
@@ -193,6 +195,11 @@ const primaryNavigationItems = [
     title: "Transacciones",
     icon: "mdi-swap-horizontal",
     to: "/transactions",
+  },
+  {
+    title: "Gastos recurrentes",
+    icon: "mdi-calendar-sync-outline",
+    to: "/recurring-expenses",
   },
   {
     title: "Acciones",
@@ -278,6 +285,21 @@ watch(
   },
 );
 
+watch(
+  () => [authStore.isAuthenticated, authStore.gmailAccessToken],
+  ([isAuthenticated, gmailAccessToken]) => {
+    if (!isAuthenticated) {
+      gmailImportStarted.value = false;
+      return;
+    }
+
+    if (isAuthenticated && gmailAccessToken) {
+      syncGmailCreditCardTransactions();
+    }
+  },
+  { immediate: true },
+);
+
 function syncNavigationGroups(path) {
   const groups = [];
 
@@ -301,6 +323,37 @@ function handleNavigation() {
 async function handleLogout() {
   await authStore.logout();
   router.push("/login");
+}
+
+async function syncGmailCreditCardTransactions() {
+  if (gmailImportStarted.value || !authStore.gmailAccessToken) {
+    return;
+  }
+
+  gmailImportStarted.value = true;
+
+  try {
+    const result = await importGmailCreditCardTransactions({
+      accessToken: authStore.gmailAccessToken,
+    });
+
+    if (result.imported > 0) {
+      notificationStore.success(
+        `Se importaron ${result.imported} compras desde Gmail.`,
+      );
+    }
+  } catch (error) {
+    const code = error?.code || "";
+
+    if (code.includes("permission-denied") || code.includes("unauthenticated")) {
+      authStore.clearGmailAccessToken();
+    }
+
+    notificationStore.show(
+      "No se pudo sincronizar Gmail. Vuelve a iniciar sesión con Google.",
+      "warning",
+    );
+  }
 }
 </script>
 

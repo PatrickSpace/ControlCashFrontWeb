@@ -14,13 +14,17 @@ import { auth } from '../firebase'
 import { getAuthErrorMessage } from '../utils/authErrors'
 
 let authReadyPromise
+const gmailAccessTokenStorageKey = 'controlcash.gmailAccessToken'
 const googleProvider = new GoogleAuthProvider()
+googleProvider.addScope('https://www.googleapis.com/auth/gmail.readonly')
 googleProvider.setCustomParameters({
+  include_granted_scopes: 'true',
   prompt: 'select_account',
 })
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
+  const gmailAccessToken = ref(getStoredGmailAccessToken())
   const initialized = ref(false)
   const loading = ref(false)
   const error = ref('')
@@ -90,7 +94,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      await signInWithPopup(auth, googleProvider)
+      const credential = await signInWithPopup(auth, googleProvider)
+      rememberGmailAccessToken(credential)
     } catch (authError) {
       error.value = getAuthErrorMessage(authError)
       throw authError
@@ -104,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
+      clearGmailAccessToken()
       await signOut(auth)
     } catch (authError) {
       error.value = getAuthErrorMessage(authError)
@@ -113,8 +119,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function rememberGmailAccessToken(authResult) {
+    const credential = GoogleAuthProvider.credentialFromResult(authResult)
+    const accessToken = credential?.accessToken
+
+    if (!accessToken) {
+      return
+    }
+
+    gmailAccessToken.value = accessToken
+    localStorage.setItem(gmailAccessTokenStorageKey, accessToken)
+  }
+
+  function clearGmailAccessToken() {
+    gmailAccessToken.value = ''
+    localStorage.removeItem(gmailAccessTokenStorageKey)
+  }
+
   return {
     user,
+    gmailAccessToken,
     initialized,
     loading,
     error,
@@ -125,5 +149,10 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     loginWithGoogle,
     logout,
+    clearGmailAccessToken,
   }
 })
+
+function getStoredGmailAccessToken() {
+  return localStorage.getItem(gmailAccessTokenStorageKey) || ''
+}

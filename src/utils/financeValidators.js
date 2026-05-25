@@ -3,8 +3,12 @@ import {
   ACCOUNT_TYPES,
   BUDGET_PERIODS,
   CATEGORY_TYPES,
+  RECURRING_EXPENSE_FREQUENCIES,
+  RECURRING_EXPENSE_TYPES,
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
+  calculateRecurringExpenseMonthlyAmount,
+  getRecurringExpenseProration,
 } from './financeModel'
 
 export class FinanceValidationError extends Error {
@@ -386,4 +390,55 @@ export function validateBudget(payload, options = {}) {
   }
 
   return budget
+}
+
+export function validateRecurringExpense(payload, options = {}) {
+  const { partial = false } = options
+  const recurringExpense = {}
+
+  if (shouldValidate(payload, 'description', partial)) {
+    recurringExpense.description = normalizeString(payload.description, 'Descripcion', {
+      required: true,
+      maxLength: 180,
+    })
+  }
+
+  if (shouldValidate(payload, 'amount', partial)) {
+    recurringExpense.amount = normalizeAmount(payload.amount, 'Importe', {
+      required: true,
+      min: 0.01,
+    })
+  }
+
+  if (shouldValidate(payload, 'frequency', partial)) {
+    recurringExpense.frequency = normalizeEnum(
+      payload.frequency || 'monthly',
+      'Frecuencia',
+      RECURRING_EXPENSE_FREQUENCIES,
+      { required: true },
+    )
+  }
+
+  if (shouldValidate(payload, 'type', partial)) {
+    recurringExpense.type = normalizeEnum(
+      payload.type || 'necessary',
+      'Tipo',
+      RECURRING_EXPENSE_TYPES,
+      { required: true },
+    )
+  }
+
+  if (shouldValidate(payload, 'isActive', partial)) {
+    recurringExpense.isActive = normalizeBoolean(payload.isActive, true)
+  }
+
+  if (recurringExpense.amount !== undefined && recurringExpense.frequency !== undefined) {
+    recurringExpense.proration = getRecurringExpenseProration(recurringExpense.frequency)
+    recurringExpense.monthlyAmount = calculateRecurringExpenseMonthlyAmount(
+      recurringExpense.amount,
+      recurringExpense.frequency,
+    )
+  }
+
+  return recurringExpense
 }
